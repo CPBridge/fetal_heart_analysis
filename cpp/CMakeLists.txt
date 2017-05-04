@@ -5,7 +5,7 @@ project(fetal_heart_analysis)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Main executable
+# Main executables
 add_executable(train_rotinv exec/src/train_rotinv.cpp)
 add_executable(test_rotinv exec/src/test_rotinv.cpp)
 add_executable(train_square exec/src/train_square.cpp)
@@ -14,7 +14,7 @@ add_executable(test_square exec/src/test_square.cpp)
 # Third party dependencies
 # ------------------------
 
-# Dependency on Boost program options
+# Dependency on Boost libraries
 find_package( Boost REQUIRED COMPONENTS program_options system filesystem)
 include_directories( ${Boost_INCLUDE_DIRS} )
 target_link_libraries( train_rotinv ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} )
@@ -52,7 +52,7 @@ add_subdirectory(${RIFEATURES_DIR} RIFeatures)
 target_link_libraries(train_rotinv RIFeatures)
 target_link_libraries(test_rotinv  RIFeatures)
 
-# Dependency on the "other" directory
+# Dependency on the "monogenic" repository
 set(MONOGENIC_DIR "" CACHE PATH "Root directory of the monogenic repository")
 include_directories(${MONOGENIC_DIR}/include)
 add_subdirectory(${MONOGENIC_DIR} monogenic)
@@ -82,6 +82,6 @@ target_link_libraries(train_square features)
 target_link_libraries(test_rotinv  features)
 target_link_libraries(test_square  features)
 
-# Dependency on other header-only directory
+# Dependency on other header-only directories
 include_directories(forests/include)
 include_directories(filters/include)

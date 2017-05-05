@@ -6,6 +6,7 @@
 #include <random>
 #include <algorithm> /* std::copy, std::transform */
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -28,6 +29,7 @@ int main( int argc, char** argv )
 	using namespace cv;
 	using namespace std;
 	namespace po = boost::program_options;
+	namespace fs = boost::filesystem;
 	namespace ut = thesisUtilities;
 	using namespace RIFeatures;
 	namespace cp = canopy;
@@ -65,7 +67,8 @@ int main( int argc, char** argv )
 	bool read_error = false;
 	int train_radius;
 	int previousvid = -1, n_class_labels;
-	string datasetfile, viddir, modelfilename, feature_header, feat_str;
+	fs::path datasetfile, viddir, modelfilename;
+	string feature_header, feat_str;
 	stringstream feat_stream;
 
 	// Forest parameters
@@ -85,9 +88,9 @@ int main( int argc, char** argv )
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help,h", "produce help message")
-		("dataset,d", po::value<string>(&datasetfile), "input dataset file")
-		("videodirectory,v", po::value<string>(&viddir)->default_value("./"), "directory containing video files")
-		("modelfile,o", po::value<string>(&modelfilename)->default_value("modelout"), "root name for output files")
+		("dataset,d", po::value<fs::path>(&datasetfile), "input dataset file")
+		("videodirectory,v", po::value<fs::path>(&viddir)->default_value("."), "directory containing video files")
+		("modelfile,o", po::value<fs::path>(&modelfilename)->default_value("modelout"), "root name for output files")
 		("featureType,f",po::value<vector<string>>(&feat_type_string)->multitoken(), "type of feature used (multiple arguments may be listed")
 		("num_training_features,t",po::value<int>(&num_training_features)->default_value(-1), "number of features to consider at each split node")
 		("nj,j",po::value<vector<int>>(&J)->multitoken(), "number of radial bases")
@@ -229,13 +232,8 @@ int main( int argc, char** argv )
 		return EXIT_FAILURE;
 	}
 
-
-	// Append trailing slash if necessary
-	if(viddir.at(viddir.length() -1 ) != '/')
-		viddir += '/';
-
 	// Read the dataset file into arrays
-	if(!ut::readDataset(datasetfile,class_names,uniquevidname,datapoints_per_vid,frameno,vidradius,label,orientation,vidindex,centrey,centrex,cardiacphase))
+	if(!ut::readDataset(datasetfile.string(),class_names,uniquevidname,datapoints_per_vid,frameno,vidradius,label,orientation,vidindex,centrey,centrex,cardiacphase))
 	{
 		cerr << "Error reading file '" << datasetfile << "'." << endl;
 		return EXIT_FAILURE;
@@ -331,10 +329,10 @@ int main( int argc, char** argv )
 		VideoCapture vid_obj;
 		// Don't know why this is needed, but it crashes here without it...
 		#pragma omp critical
-		vid_obj.open(viddir + uniquevidname[v]);
+		vid_obj.open( (viddir / uniquevidname[v]).string() );
 		if (!vid_obj.isOpened())
 		{
-			cerr  << "Could not open reference " << viddir + uniquevidname[v] << endl;
+			cerr  << "Could not open reference " << (viddir / uniquevidname[v]).string() << endl;
 			read_error = true;
 			continue;
 		}
@@ -344,7 +342,7 @@ int main( int argc, char** argv )
 
 		if(isnan(frame_rate))
 		{
-			frame_rate = ut::getFrameRate(uniquevidname[v],viddir);
+			frame_rate = ut::getFrameRate(uniquevidname[v],viddir.string());
 			if(isnan(frame_rate))
 			{
 				cerr << "Could not determine frame rate for video " << uniquevidname[v] << endl;
@@ -629,7 +627,7 @@ int main( int argc, char** argv )
 		forest.setClassNames(class_names);
 		forest.train( train_ids.cbegin(), train_ids.cend(), label.cbegin(), feature_lambda, param_generator_lambda, num_training_features,true,0.5,fit_split_dists);
 		forest.setFeatureDefinitionString(feature_header,feat_str);
-		forest.writeToFile(modelfilename + ".tr");
+		forest.writeToFile(modelfilename.string() + ".tr");
 	}
 
 	// Train further models depending on the problem type
@@ -650,7 +648,7 @@ int main( int argc, char** argv )
 			ori_forest.setClassNames(class_names);
 			ori_forest.train( train_ids.cbegin(), train_ids.cend(), ori_labels.cbegin(), feature_lambda, param_generator_lambda, num_training_features,true,0.5,fit_split_dists);
 			ori_forest.setFeatureDefinitionString(feature_header,feat_str);
-			ori_forest.writeToFile(modelfilename + "_ori.tr");
+			ori_forest.writeToFile(modelfilename.string() + "_ori.tr");
 		}
 		break;
 
@@ -661,7 +659,7 @@ int main( int argc, char** argv )
 				cp::circularRegressor<2> phase_forest(num_trees, tree_depth);
 				phase_forest.train(ids_per_label[c-1].cbegin(),ids_per_label[c-1].cend(), boost::make_permutation_iterator(cardiacphase.cbegin(),ids_per_label[c-1].cbegin()), feature_lambda, param_generator_lambda, num_training_features,true,0.5,fit_split_dists);
 				phase_forest.setFeatureDefinitionString(feature_header,feat_str);
-				phase_forest.writeToFile(modelfilename + "_phase" + to_string(c) + ".tr");
+				phase_forest.writeToFile(modelfilename.string() + "_phase" + to_string(c) + ".tr");
 			}
 		break;
 
@@ -677,7 +675,7 @@ int main( int argc, char** argv )
 				const auto ori_phase_it =  boost::make_permutation_iterator(ori_phase_labels.cbegin(),ids_per_label[c-1].cbegin());
 				ori_phase_forest.train(ids_per_label[c-1].cbegin(),ids_per_label[c-1].cend(), ori_phase_it, feature_lambda, param_generator_lambda, num_training_features,true,0.5,fit_split_dists);
 				ori_phase_forest.setFeatureDefinitionString(feature_header,feat_str);
-				ori_phase_forest.writeToFile(modelfilename + "_phaseori" + to_string(c) + ".tr");
+				ori_phase_forest.writeToFile(modelfilename.string() + "_phaseori" + to_string(c) + ".tr");
 			}
 		}
 		break;

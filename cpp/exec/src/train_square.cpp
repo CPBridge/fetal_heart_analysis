@@ -8,6 +8,7 @@
 #include <opencv2/video/video.hpp>
 #include <omp.h>
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include "squareTrainingFunctors.h"
 #include <canopy/classifier/classifier.hpp>
 #include <canopy/circularRegressor/circularRegressor.hpp>
@@ -24,6 +25,7 @@ int main( int argc, char** argv )
 	using namespace std;
 	namespace ut = thesisUtilities;
 	namespace po = boost::program_options;
+	namespace fs = boost::filesystem;
 	namespace cp = canopy;
 
 	// Default parameters
@@ -49,7 +51,7 @@ int main( int argc, char** argv )
 	bool read_error = false;
 	unsigned previousvid = -1;
 	int n_class_labels,winhalfsize,featurehalfsize,n_orientations;
-	string datasetfile, viddir, modelfilename;
+	fs::path datasetfile, viddir, modelfilename;
 
 	// Forest parameters
 	int num_trees,tree_depth,num_training_features;
@@ -63,8 +65,8 @@ int main( int argc, char** argv )
 	po::options_description desc("Allowed options");
 	desc.add_options()
 		("help,h", "produce help message")
-		("dataset,d", po::value<string>(&datasetfile), "input dataset file")
-		("videodirectory,v", po::value<string>(&viddir)->default_value("./"), "directory containing video files")
+		("dataset,d", po::value<fs::path>(&datasetfile), "input dataset file")
+		("videodirectory,v", po::value<fs::path>(&viddir)->default_value("./"), "directory containing video files")
 		("trees,n",po::value<int>(&num_trees)->default_value(C_DEFAULT_TREES), "number of trees")
 		("depth,l",po::value<int>(&tree_depth)->default_value(C_DEFAULT_LEVELS), "number of levels per tree")
 		("num_training_features,t",po::value<int>(&num_training_features)->default_value(C_DEFAULT_NUM_TRAINING_FEATURES), "number of features to consider at each split node")
@@ -78,7 +80,7 @@ int main( int argc, char** argv )
 		("wavelength,w",po::value<vector<float>>(&wl)->multitoken(), "monogenic filter centre-wavelength")
 		("without_split_node_dists,s" , "do not fit node distributions to split nodes in the forest")
 		("angle_jitter,j", "add random noise to the angle labels so they cover the whole orientation bin")
-		("modelfile,o", po::value<string>(&modelfilename)->default_value("modelout"), "root name for output files")
+		("modelfile,o", po::value<fs::path>(&modelfilename)->default_value("modelout"), "root name for output files")
 		("display,D", "input dataset file");
 
 	po::variables_map vm;
@@ -206,12 +208,8 @@ int main( int argc, char** argv )
 
 	const bool using_motion = any_of(feat_type.begin(), feat_type.end(), [](ut::featType_t ft) { return (ft == ut::ftMotion); }) ;
 
-	// Append trailing slash if necessary
-	if(viddir.at(viddir.length() -1 ) != '/')
-		viddir += '/';
-
 	// Read the dataset file into arrays
-	if(!ut::readDataset(datasetfile,class_names,uniquevidname,datapoints_per_vid,frameno,vidradius,label,orientation,vidindex,centrey,centrex,cardiacphase))
+	if(!ut::readDataset(datasetfile.string(),class_names,uniquevidname,datapoints_per_vid,frameno,vidradius,label,orientation,vidindex,centrey,centrex,cardiacphase))
 	{
 		cout << "Error reading file '" << datasetfile << "'." << endl;
 		return EXIT_FAILURE;
@@ -290,10 +288,10 @@ int main( int argc, char** argv )
 			Mat_<unsigned char> I,I_prev;
 
 			// Open the video file
-			VideoCapture vid_obj(viddir + uniquevidname[v]);
+			VideoCapture vid_obj( (viddir / uniquevidname[v]).string() );
 			if (!vid_obj.isOpened())
 			{
-				cout  << "Could not open reference " << viddir + uniquevidname[v] << endl;
+				cout  << "Could not open reference " << viddir / uniquevidname[v] << endl;
 				read_error = true;
 				continue;
 			}
@@ -303,7 +301,7 @@ int main( int argc, char** argv )
 
 			if(isnan(frame_rate))
 			{
-				frame_rate = ut::getFrameRate(uniquevidname[v],viddir);
+				frame_rate = ut::getFrameRate(uniquevidname[v],viddir.string());
 				if(isnan(frame_rate))
 				{
 					cout << "Could not determine frame rate for video " << uniquevidname[v] << endl;
@@ -503,7 +501,7 @@ int main( int argc, char** argv )
 			forest.setClassNames(class_names);
 			forest.train(train_ids.cbegin(), train_ids.cend(), label.cbegin(), train_ftr, param_generator_lamda, num_training_features,true,0.5,fit_split_dists);
 			forest.setFeatureDefinitionString(feature_header,feat_stream.str());
-			forest.writeToFile(modelfilename + "_rotation_" + std::to_string(ori_ind) + ".tr");
+			forest.writeToFile(modelfilename.string() + "_rotation_" + std::to_string(ori_ind) + ".tr");
 		}
 
 		// Train phase regression forests
@@ -515,7 +513,7 @@ int main( int argc, char** argv )
 				cp::circularRegressor<rectangleFilterDefines::NUM_RECT_PARAMS> phase_forest(num_trees, tree_depth);
 				phase_forest.train(ids_per_label[c-1].cbegin(),ids_per_label[c-1].cend(), boost::make_permutation_iterator(cardiacphase.cbegin(),ids_per_label[c-1].cbegin()), train_ftr, param_generator_lamda, num_training_features,true,0.5,fit_split_dists);
 				phase_forest.setFeatureDefinitionString(feature_header,feat_stream.str());
-				phase_forest.writeToFile(modelfilename + "_rotation_" + std::to_string(ori_ind) + "_phase_" + to_string(c) + ".tr");
+				phase_forest.writeToFile(modelfilename.string() + "_rotation_" + std::to_string(ori_ind) + "_phase_" + to_string(c) + ".tr");
 			}
 		}
 	}

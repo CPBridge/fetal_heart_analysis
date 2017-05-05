@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -39,6 +40,7 @@ int main( int argc, char** argv )
 	using namespace cv;
 	using namespace std;
 	namespace po = boost::program_options;
+	namespace fs = boost::filesystem;
 	namespace ut = thesisUtilities;
 	namespace cp = canopy;
 
@@ -75,9 +77,11 @@ int main( int argc, char** argv )
 	float radius, scale_factor, detection_threshold, frame_rate,pad_fraction, structure_dist_temp;
 	const Size mean_shift_size(C_MEAN_SHIFT_WINSIZE,C_MEAN_SHIFT_WINSIZE);
 	const TermCriteria mean_shift_term_crit(1,100,1.0);
-	string videofile, modelname, maskstring, feat_str, subs_feat_str, abd_hough_feat_str, ground_truth_track_filename, ground_truth_subs_filename, ground_truth_abd_filename, record_vidname, ri_method_string, coupling_method_string, output_file_name;
+	fs::path videofile, modelname, maskstring, ground_truth_track_filename, ground_truth_subs_filename, ground_truth_abd_filename, record_vidname, output_file_name;
+	string feat_str, subs_feat_str, abd_hough_feat_str, ri_method_string, coupling_method_string;
 	VideoWriter output_video;
-	vector<string> class_names, subs_class_names, filter_def_files;
+	vector<string> class_names, subs_class_names;
+	vector<fs::path> filter_def_files;
 
 	// Feature parameters
 	vector<int> J,K,M, max_rot_order, feature_set_type, basis_type, Jmax;
@@ -95,11 +99,11 @@ int main( int argc, char** argv )
 		("pause,u", "pause the video until a key press after each frame")
 		("display_hidden,H", "display hidden detections with a white circle")
 		("displaymode,d", po::value<int>(&display_mode)->default_value(C_DISPLAY_MODE_DETECTION), "0 no display, 1 detection only, 2 posterior superimposed, 3 ground truth, 4 posterior only")
-		("record,c", po::value<string>(&record_vidname)->default_value("none"), "record an output video with the given filename")
-		("videofile,v", po::value<string>(&videofile), "video to process")
-		("modelfile,m", po::value<string>(&modelname)->default_value("modelout"), "root name for model definition files")
+		("record,c", po::value<fs::path>(&record_vidname)->default_value("none"), "record an output video with the given filename")
+		("videofile,v", po::value<fs::path>(&videofile), "video to process")
+		("modelfile,m", po::value<fs::path>(&modelname)->default_value("modelout"), "root name for model definition files")
 		("radius,r", po::value<float>(&radius), "radius at which to search for the objects")
-		("mask,k", po::value<string>(&maskstring)->default_value("none"), "image file containing mask of the ultrasound fan area")
+		("mask,k", po::value<fs::path>(&maskstring)->default_value("none"), "image file containing mask of the ultrasound fan area")
 		("n_trees,n", po::value<int>(&n_trees)->default_value(-1), "number of trees in the forest to use (if -ve all trained trees used)")
 		("n_tree_levels,l", po::value<int>(&n_tree_levels)->default_value(-1), "number of levels in the forest to use (if -ve all trained levels used)")
 		("n_trees_phase,N", po::value<int>(&n_trees_phase)->default_value(-1), "number of trees in the phase forest to use (if -ve all trained trees used)")
@@ -109,17 +113,17 @@ int main( int argc, char** argv )
 		("n_particles,Q", po::value<int>(&n_particles)->default_value(C_DEFAULT_N_PARTICLES), "number of particles for the particle filtering")
 		("threshold,t", po::value<float>(&detection_threshold)->default_value(C_DETECTION_THRESHOLD), "detection threshold (range 0 1)")
 		("problem_type,p", po::value<int>(&problem_type_in)->default_value(0), "0 class, 1 phase, 2 ori, 3 full, 4 substructure, 5 subspca")
-		("output,o", po::value<string>(&output_file_name), "output detections to this results file")
+		("output,o", po::value<fs::path>(&output_file_name), "output detections to this results file")
 		("filter,f", "filter detections temporally using a particle filer")
 		("use_ground_truth_position,P", "give orientation and phase estimates for the ground truth location rather than predicted location")
 		("ri_feature_method,R", po::value<string>(&ri_method_string), "method to use for calculating rotation invariant features (default auto)")
 		("ri_coupling_method,C", po::value<string>(&coupling_method_string), "method to use for coupling within invariant features (default auto)")
 		("spatial_feature_memoisation,M", "use spatial memoisation within feature extractors")
 		("structure_distribution_temperature,X", po::value<float>(&structure_dist_temp)->default_value(-1.0), "smooth the node distributions of the structure forests using this temperature (higher -> smoother)")
-		("filterfile,z", po::value<vector<string>>(&filter_def_files)->multitoken(),"particle filter definition files (list all in order)")
-		("groundtruthtrackfile,g",po::value<string>(&ground_truth_track_filename)->default_value("none"), "track file to read for ground truth" )
-		("groundtruthsubsfile,i",po::value<string>(&ground_truth_subs_filename)->default_value("none"), "track file to read for substructures ground truth" )
-		("groundtruthabdfile,j",po::value<string>(&ground_truth_abd_filename)->default_value("none"), "track file to read for abdomen ground truth" )
+		("filterfile,z", po::value<vector<fs::path>>(&filter_def_files)->multitoken(),"particle filter definition files (list all in order)")
+		("groundtruthtrackfile,g",po::value<fs::path>(&ground_truth_track_filename)->default_value("none"), "track file to read for ground truth" )
+		("groundtruthsubsfile,i",po::value<fs::path>(&ground_truth_subs_filename)->default_value("none"), "track file to read for substructures ground truth" )
+		("groundtruthabdfile,j",po::value<fs::path>(&ground_truth_abd_filename)->default_value("none"), "track file to read for abdomen ground truth" )
 		("pad_border_fraction,b", po::value<float>(&pad_fraction)->default_value(C_DEFAULT_PAD_FRACTION), "fraction of the image width and height that are added to each side to define the limits of the Hough space")
 		("pixel_skip,q", po::value<int>(&pixel_skip)->default_value(1), "stride of pixels at which to evaluate the hough Forest forest")
 		("motion_tracking,x", "Use motion estimate to track abdominal movement ")
@@ -140,7 +144,7 @@ int main( int argc, char** argv )
 	const bool use_particle_filter = bool(vm.count("filter"));
 	const ut::problemType_t test_problem = ut::problemType_t(problem_type_in);
 	const bool pause = bool(vm.count("pause"));
-	const bool record = (record_vidname.compare("none") != 0);
+	const bool record = (record_vidname.string().compare("none") != 0);
 	const bool display_hidden = bool(vm.count("display_hidden"));
 	const bool using_abdomen_hough = (test_problem == ut::ptAbdomen);
 	const bool tracking_heart = (test_problem != ut::ptAbdomen);
@@ -161,8 +165,8 @@ int main( int argc, char** argv )
 	}
 
 	// Add extension to tree file name
-	if (modelname.compare(modelname.size()-3,3,".tr") != 0)
-		modelname += ".tr";
+	if(modelname.extension().empty())
+		modelname.concat(".tr");
 
 	if(! ( (test_problem == ut::ptClass) || (test_problem == ut::ptClassOri) || (test_problem == ut::ptClassPhase) || (test_problem == ut::ptClassOriPhase) || (test_problem == ut::ptSubstructures) || (test_problem == ut::ptSubstructuresPCA) || (test_problem == ut::ptAbdomen) ) )
 	{
@@ -217,8 +221,8 @@ int main( int argc, char** argv )
 	cp::jointOrientationRegressor<cp::circCircSingleRegressor<orientationTestingFunctor>,2> ori_forest;
 	if( (test_problem == ut::ptClassOri) )
 	{
-		string ori_model_name = modelname.substr(0,modelname.size()-3) + "_ori.tr";
-		ori_forest.readFromFile(ori_model_name, n_trees,n_tree_levels);
+		const fs::path ori_model_name = modelname.parent_path() / modelname.stem().concat("_ori").replace_extension(modelname.extension());
+		ori_forest.readFromFile(ori_model_name.string(), n_trees,n_tree_levels);
 		if(!ori_forest.isValid())
 		{
 			cerr << " ERROR: invalid tree input! " << ori_model_name << endl;
@@ -229,7 +233,7 @@ int main( int argc, char** argv )
 	}
 	else
 	{
-		forest.readFromFile(modelname, n_trees,n_tree_levels);
+		forest.readFromFile(modelname.string(), n_trees,n_tree_levels);
 		if(!forest.isValid())
 		{
 			cerr << " ERROR: invalid tree input! " << modelname << endl;
@@ -247,8 +251,8 @@ int main( int argc, char** argv )
 		phase_forest.resize(forest.getNumberClasses()-1);
 		for(int c = 1; c < forest.getNumberClasses(); ++c)
 		{
-			const string phase_model_name = modelname.substr(0,modelname.size()-3) + "_phase" + to_string(c) + ".tr";
-			phase_forest[c-1].readFromFile(phase_model_name,n_trees_phase,n_tree_levels_phase);
+			const fs::path phase_model_name = modelname.parent_path() / modelname.stem().concat( "_phase" + to_string(c) ).replace_extension(modelname.extension());
+			phase_forest[c-1].readFromFile(phase_model_name.string(),n_trees_phase,n_tree_levels_phase);
 			if(!phase_forest[c-1].isValid())
 			{
 				cerr << " ERROR: invalid tree input!" << phase_model_name << endl;
@@ -274,8 +278,8 @@ int main( int argc, char** argv )
 		ori_phase_forest.resize(forest.getNumberClasses()-1);
 		for(int c = 1; c < forest.getNumberClasses(); ++c)
 		{
-			const string ori_phase_model_name = modelname.substr(0,modelname.size()-3) + "_phaseori" + to_string(c) + ".tr";
-			ori_phase_forest[c-1].readFromFile(ori_phase_model_name,n_trees_phase,n_tree_levels_phase);
+			const fs::path ori_phase_model_name = modelname.parent_path() / modelname.stem().concat( "_phaseori" + to_string(c) ).replace_extension(modelname.extension());
+			ori_phase_forest[c-1].readFromFile(ori_phase_model_name.string(),n_trees_phase,n_tree_levels_phase);
 			if(!ori_phase_forest[c-1].isValid())
 			{
 				cerr << " ERROR: invalid tree input! " << ori_phase_model_name << endl;
@@ -297,8 +301,8 @@ int main( int argc, char** argv )
 	const bool tracking_substructures = (test_problem == ut::ptSubstructures || test_problem == ut::ptSubstructuresPCA);
 	if(tracking_substructures)
 	{
-		const string subs_model_name = modelname.substr(0,modelname.size()-3) + "_subs.tr";
-		subs_forest.readFromFile(subs_model_name, n_trees_subs,n_tree_levels_subs);
+		const fs::path subs_model_name = modelname.parent_path() / modelname.stem().concat( "_subs" ).replace_extension(modelname.extension());
+		subs_forest.readFromFile(subs_model_name.string(), n_trees_subs,n_tree_levels_subs);
 		if(!subs_forest.isValid())
 		{
 			cerr << " ERROR: invalid tree input! " << subs_model_name << endl;
@@ -314,8 +318,8 @@ int main( int argc, char** argv )
 	cp::RIHoughForest<orientationTestingFunctor,2> abd_hough_forest;
 	if(using_abdomen_hough)
 	{
-		const string abd_hough_model_name = modelname.substr(0,modelname.size()-3) + "_abdhough.tr";
-		abd_hough_forest.readFromFile(abd_hough_model_name, n_trees,n_tree_levels);
+		const fs::path abd_hough_model_name = modelname.parent_path() / modelname.stem().concat( "_abdhough" ).replace_extension(modelname.extension());
+		abd_hough_forest.readFromFile(abd_hough_model_name.string(), n_trees,n_tree_levels);
 		if(!abd_hough_forest.isValid())
 		{
 			cerr << " ERROR: invalid tree input! " << abd_hough_model_name << endl;
@@ -393,7 +397,12 @@ int main( int argc, char** argv )
 
 	// Open the video file
 	VideoCapture vid_obj;
-	vid_obj.open(videofile);
+	if(!fs::exists(videofile))
+	{
+		cerr  << "ERROR: Video file does not exist" << videofile.string() << endl;
+		return EXIT_FAILURE;
+	}
+	vid_obj.open(videofile.string());
 	if ( !vid_obj.isOpened() )
 	{
 		cerr  << "ERROR: Could not open video file " << videofile << endl;
@@ -403,7 +412,7 @@ int main( int argc, char** argv )
 
 	if(isnan(frame_rate))
 	{
-		frame_rate = ut::getFrameRate(videofile,videofile.substr(0,videofile.find_last_of("/")));
+		frame_rate = ut::getFrameRate(videofile.string(),videofile.parent_path().string());
 		if(isnan(frame_rate))
 		{
 			cerr << "ERROR: Could not determine frame rate of the video " << endl;
@@ -437,13 +446,13 @@ int main( int argc, char** argv )
 	std::vector<std::vector<ut::subStructLabel_t>> gro_tru_subs_track;
 	if(tracking_heart && ( (display_mode == C_DISPLAY_MODE_GROUNDTRUTH) || use_gro_truth_location ) )
 	{
-		if(ground_truth_track_filename.compare("none") == 0)
+		if(ground_truth_track_filename.string().compare("none") == 0)
 		{
 			cerr << "ERROR: Ground truth display (or use_ground_truth_position) requested but no track file provided (use -g option)" << endl;
 			return EXIT_FAILURE;
 		}
 
-		if(!ut::readTrackFile(ground_truth_track_filename, n_frames, gro_tru_headup, gro_tru_radius, gro_tru_labelled, gro_tru_present,
+		if(!ut::readTrackFile(ground_truth_track_filename.string(), n_frames, gro_tru_headup, gro_tru_radius, gro_tru_labelled, gro_tru_present,
 						   gro_tru_y, gro_tru_x, gro_tru_ori_degrees, gro_tru_view, gro_tru_phase_point, gro_tru_phase) )
 		{
 			cerr << "Error reading the requested track file " << ground_truth_track_filename << endl;
@@ -453,13 +462,13 @@ int main( int argc, char** argv )
 
 	if(tracking_substructures && (display_mode == C_DISPLAY_MODE_GROUNDTRUTH))
 	{
-		if(ground_truth_subs_filename == "none")
+		if(ground_truth_subs_filename.string() == "none")
 		{
 			cerr << "ERROR: Ground truth display requested but no track file provided for substructures (use -i option)" << endl;
 			return EXIT_FAILURE;
 		}
 		vector<string> non_background_subs_names(subs_class_names.cbegin()+1,subs_class_names.cend());
-		if(!readGivenSubstructures(ground_truth_subs_filename, non_background_subs_names, n_frames, gro_tru_subs_track))
+		if(!readGivenSubstructures(ground_truth_subs_filename.string(), non_background_subs_names, n_frames, gro_tru_subs_track))
 		{
 			cerr << "Error reading the requested substructure track file " << ground_truth_subs_filename << endl;
 			return EXIT_FAILURE;
@@ -468,13 +477,13 @@ int main( int argc, char** argv )
 
 	if(using_abdomen_hough && display_mode == C_DISPLAY_MODE_GROUNDTRUTH)
 	{
-		if(ground_truth_abd_filename.compare("none") == 0)
+		if(ground_truth_abd_filename.string().compare("none") == 0)
 		{
 			cerr << "ERROR: Ground truth display requested but no track file provided for abdomen (use -j option)" << endl;
 			return EXIT_FAILURE;
 		}
 		bool gro_tru_abd_headup;
-		if(!ut::readAbdomenTrackFile(ground_truth_abd_filename, n_frames, gro_tru_abd_headup, gro_tru_abd_radius, gro_tru_abd_labelled, gro_tru_abd_present,
+		if(!ut::readAbdomenTrackFile(ground_truth_abd_filename.string(), n_frames, gro_tru_abd_headup, gro_tru_abd_radius, gro_tru_abd_labelled, gro_tru_abd_present,
 						   gro_tru_abd_y, gro_tru_abd_x, gro_tru_abd_ori) )
 		{
 			cerr << "Error reading the requested track file " << ground_truth_abd_filename << endl;
@@ -501,7 +510,7 @@ int main( int argc, char** argv )
 
 	// Attempt to load a mask
 	Mat_<unsigned char> valid_mask;
-	if( !ut::prepareMask(maskstring,Size(xsize,ysize),valid_mask,radius/scale_factor,Size(xresize,yresize), max_spat_basis_halfsize) )
+	if( !ut::prepareMask(maskstring.string(),Size(xsize,ysize),valid_mask,radius/scale_factor,Size(xresize,yresize), max_spat_basis_halfsize) )
 	{
 		cerr << "ERROR loading the mask: " << maskstring << endl;
 		return EXIT_FAILURE;
@@ -527,7 +536,7 @@ int main( int argc, char** argv )
 		int max_spat_basis_halfsize_subs = -1;
 		for(int ft = 0; ft < n_feat_types; ++ft)
 			max_spat_basis_halfsize_subs = std::max(max_spat_basis_halfsize_subs,feat_extractor[ft].getMaxSpatBasisHalfsize(subs_Jmax[ft]));
-		if( !ut::prepareMask(maskstring,Size(xsize,ysize),subs_valid_mask,std::ceil(subs_mask_radius_frac*radius/scale_factor),Size(xresize,yresize),max_spat_basis_halfsize_subs) )
+		if( !ut::prepareMask(maskstring.string(),Size(xsize,ysize),subs_valid_mask,std::ceil(subs_mask_radius_frac*radius/scale_factor),Size(xresize,yresize),max_spat_basis_halfsize_subs) )
 		{
 			cerr << "ERROR loading the mask: " << maskstring << endl;
 			return EXIT_FAILURE;
@@ -551,7 +560,7 @@ int main( int argc, char** argv )
 		int max_spat_basis_halfsize_abd_hough = -1;
 		for(int ft = 0; ft < n_feat_types; ++ft)
 			max_spat_basis_halfsize_abd_hough = std::max(max_spat_basis_halfsize_abd_hough,feat_extractor[ft].getMaxSpatBasisHalfsize(abd_hough_Jmax[ft]));
-		if( !ut::prepareMask(maskstring,Size(xsize,ysize),hough_valid_mask,std::ceil(abd_mask_radius_frac*radius/scale_factor),Size(xresize,yresize), max_spat_basis_halfsize_abd_hough) )
+		if( !ut::prepareMask(maskstring.string(),Size(xsize,ysize),hough_valid_mask,std::ceil(abd_mask_radius_frac*radius/scale_factor),Size(xresize,yresize), max_spat_basis_halfsize_abd_hough) )
 		{
 			cerr << "ERROR loading the mask: " << maskstring << endl;
 			return EXIT_FAILURE;
@@ -630,7 +639,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt = particleFilterPosClass<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, filter_def_files[0], &valid_mask);
+				p_filt = particleFilterPosClass<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, filter_def_files[0].string(), &valid_mask);
 				if (!p_filt.checkInit())
 				{
 					cerr << "Error reading filter definition files " << endl;
@@ -644,7 +653,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_ori = particleFilterPosClassOri<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, filter_def_files[0], &valid_mask);
+				p_filt_ori = particleFilterPosClassOri<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, filter_def_files[0].string(), &valid_mask);
 				if (!p_filt_ori.checkInit())
 				{
 					cerr << "Error reading filter definition files " << endl;
@@ -658,7 +667,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_phase = particleFilterPosClassPhase<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, frame_rate, filter_def_files[0], filter_def_files[1], &valid_mask);
+				p_filt_phase = particleFilterPosClassPhase<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, frame_rate, filter_def_files[0].string(), filter_def_files[1].string(), &valid_mask);
 				if (!p_filt_phase.checkInit())
 				{
 					cerr << "Error reading filter definition file " << endl;
@@ -672,7 +681,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_ori_phase = particleFilterPosClassPhaseOri<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, frame_rate, filter_def_files[0], filter_def_files[1], &valid_mask);
+				p_filt_ori_phase = particleFilterPosClassPhaseOri<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, frame_rate, filter_def_files[0].string(), filter_def_files[1].string(), &valid_mask);
 				if (!p_filt_ori_phase.checkInit())
 				{
 					cerr << "Error reading filter definition file " << endl;
@@ -686,7 +695,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_subs = particleFilterSingleStructs<C_N_VIEW_CLASSES,C_N_STRUCTURES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0], filter_def_files[1], filter_def_files[2], subs_class_names, &valid_mask,&subs_valid_mask);
+				p_filt_subs = particleFilterSingleStructs<C_N_VIEW_CLASSES,C_N_STRUCTURES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0].string(), filter_def_files[1].string(), filter_def_files[2].string(), subs_class_names, &valid_mask,&subs_valid_mask);
 				if (!p_filt_subs.checkInit())
 				{
 					cerr << "Error reading filter definition file " << endl;
@@ -700,7 +709,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_subs_pca = particleFilterSubStructs<C_N_VIEW_CLASSES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0], filter_def_files[1], filter_def_files[2], subs_class_names, &valid_mask,&subs_valid_mask);
+				p_filt_subs_pca = particleFilterSubStructs<C_N_VIEW_CLASSES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0].string(), filter_def_files[1].string(), filter_def_files[2].string(), subs_class_names, &valid_mask,&subs_valid_mask);
 				if (!p_filt_subs_pca.checkInit())
 				{
 					cerr << "Error reading filter definition file " << endl;
@@ -944,7 +953,7 @@ int main( int argc, char** argv )
 		}
 
 		int ex = static_cast<int>(vid_obj.get(CV_CAP_PROP_FOURCC));
-		output_video.open(record_vidname, ex, frame_rate, record_vid_size, true);
+		output_video.open(record_vidname.string(), ex, frame_rate, record_vid_size, true);
 
 		if (!output_video.isOpened())
 		{
@@ -966,14 +975,14 @@ int main( int argc, char** argv )
 	ofstream output_file;
 	if(output_detections)
 	{
-		output_file.open(output_file_name.c_str());
+		output_file.open(output_file_name.string().c_str());
 		if (!output_file.is_open())
 		{
 			cerr << "ERROR: Could not open file " << output_file_name << " for writing" << endl;
 			return EXIT_FAILURE;
 		}
 
-		output_file << "BEGIN" << " " << videofile << " " << modelname << " " << radius/scale_factor << " ";
+		output_file << "BEGIN" << " " << videofile << " " << modelname.string() << " " << radius/scale_factor << " ";
 		switch(test_problem)
 		{
 			case ut::ptClass:

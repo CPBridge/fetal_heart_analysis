@@ -7,6 +7,7 @@
 #include <vector>
 #include <tuple>
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 #include <RIFeatures/RIFeatExtractor.hpp>
 #include <canopy/classifier/discreteDistribution.hpp>
 #include <canopy/classifier/classifier.hpp>
@@ -31,6 +32,7 @@ int main( int argc, char** argv )
 	using namespace cv;
 	using namespace std;
 	namespace po = boost::program_options;
+	namespace fs = boost::filesystem;
 	namespace ut = thesisUtilities;
 	namespace cp = canopy;
 
@@ -57,9 +59,10 @@ int main( int argc, char** argv )
 	int winhalfsize, featurehalfsize, subs_featurehalfsize;
 	cv::Size mean_shift_size(30,30);
 	cv::TermCriteria mean_shift_term_crit(1,100,1.0);
-	string videofile, modelname, maskstring, feat_str, output_file_name, ground_truth_track_filename;
+	fs::path videofile, modelname, maskstring, output_file_name, ground_truth_track_filename;
+	string feat_str;
 	int problem_type_in;
-	vector<string> filter_def_files;
+	vector<fs::path> filter_def_files;
 
 	// Feature parameters
 	int num_feat_types;
@@ -76,10 +79,10 @@ int main( int argc, char** argv )
 		("help,h", "produce help message")
 		("pause,u", "pause the video until a key press after each frame")
 		("problem_type,p", po::value<int>(&problem_type_in)->default_value(0), "0 class, 1 phase, 2 ori, 3 full, 4 substructure, 5 subs+phase")
-		("output,o", po::value<string>(&output_file_name), "output detections to this results file")
+		("output,o", po::value<fs::path>(&output_file_name), "output detections to this results file")
 		("threshold,t", po::value<float>(&detection_threshold)->default_value(C_DETECTION_THRESHOLD), "detection threshold (range 0 1)")
-		("videofile,v", po::value<string>(&videofile), "video to process")
-		("modelfile,m", po::value<string>(&modelname)->default_value("modelout"), "root name for model definition files")
+		("videofile,v", po::value<fs::path>(&videofile), "video to process")
+		("modelfile,m", po::value<fs::path>(&modelname)->default_value("modelout"), "root name for model definition files")
 		("radius,r", po::value<float>(&radius), "radius at which to search for the objects")
 		("n_trees,n", po::value<int>(&n_trees)->default_value(-1), "number of trees in the forest to use (if -ve all trained trees used)")
 		("n_tree_levels,l", po::value<int>(&n_tree_levels)->default_value(-1), "number of levels in the forest to use (if -ve all trained levels used)")
@@ -92,10 +95,10 @@ int main( int argc, char** argv )
 		("displaymode,d", po::value<int>(&display_mode)->default_value(C_DISPLAY_MODE_DETECTION), "0 no display, 1 detection only, 2 posterior superimposed, 3 ground truth, 4 posterior only")
 		("display_hidden,H", "display hidden detections with a white circle")
 		("use_ground_truth_position,P", "give orientation and phase estimates for the ground truth location rather than predicted location")
-		("groundtruthtrackfile,g",po::value<string>(&ground_truth_track_filename)->default_value("none"), "track file to read for ground truth" )
-		("mask,k", po::value<string>(&maskstring)->default_value("none"), "image file containing mask of the ultrasound fan area")
+		("groundtruthtrackfile,g",po::value<fs::path>(&ground_truth_track_filename)->default_value("none"), "track file to read for ground truth" )
+		("mask,k", po::value<fs::path>(&maskstring)->default_value("none"), "image file containing mask of the ultrasound fan area")
 		("filter,f", "filter detections temporally using a particle filer")
-		("filterfile,z", po::value<vector<string>>(&filter_def_files)->multitoken(),"particle filter definition files (list all in order)");
+		("filterfile,z", po::value<vector<fs::path>>(&filter_def_files)->multitoken(),"particle filter definition files (list all in order)");
 
 	// Parse input variables
 	po::variables_map vm;
@@ -160,10 +163,14 @@ int main( int argc, char** argv )
 	// LOAD FOREST MODELS
 	//--------------------------------------------------------------------------
 
+	// Add extension to tree file name
+	if(modelname.extension().empty())
+		modelname.concat(".tr");
+
 	// Attempt to load the tree structure from file
 	forest.resize(1);
-	string first_forest_file_name = modelname + "_rotation_0.tr";
-	forest[0].readFromFile(first_forest_file_name,n_trees,n_tree_levels);
+	const fs::path first_forest_file_name = modelname.parent_path() / modelname.stem().concat("_rotation_0").replace_extension(modelname.extension());
+	forest[0].readFromFile(first_forest_file_name.string(),n_trees,n_tree_levels);
 	if(!forest[0].isValid())
 	{
 		cerr << "ERROR: Invalid tree file: " << first_forest_file_name << endl;
@@ -198,8 +205,8 @@ int main( int argc, char** argv )
 			phase_forest[r].resize(n_classes-1);
 		for(int c = 1; c < n_classes; ++c)
 		{
-			const string phase_model_name = modelname + "_rotation_0_phase_" + to_string(c) + ".tr";
-			phase_forest[0][c-1].readFromFile(phase_model_name,n_trees_phase,n_tree_levels_phase);
+			const fs::path phase_model_name = modelname.parent_path() / modelname.stem().concat("_rotation_0_phase_" + std::to_string(c)).replace_extension(modelname.extension());
+			phase_forest[0][c-1].readFromFile(phase_model_name.string(),n_trees_phase,n_tree_levels_phase);
 			if(!phase_forest[0][c-1].isValid())
 			{
 				cerr << " ERROR: invalid tree input: " << phase_model_name << endl;
@@ -222,8 +229,8 @@ int main( int argc, char** argv )
 	if(tracking_substructures)
 	{
 		subs_forest.resize(n_rotations);
-		const string subs_model_name = modelname + "_subs_rotation_0.tr";
-		subs_forest[0].readFromFile(subs_model_name, n_trees_subs,n_tree_levels_subs);
+		const fs::path subs_model_name = modelname.parent_path() / modelname.stem().concat("_subs_rotation_0").replace_extension(modelname.extension());
+		subs_forest[0].readFromFile(subs_model_name.string(), n_trees_subs,n_tree_levels_subs);
 		subs_forest[0].getClassNames(subs_class_names);
 		if(!subs_forest[0].isValid())
 		{
@@ -271,10 +278,10 @@ int main( int argc, char** argv )
 		vector<ut::featType_t> feat_type_temp;
 		int num_feat_types_temp, ori_ind_temp, n_rotations_temp, winhalfsize_temp, featurehalfsize_temp;
 		string this_rotation_feature_string;
-		string this_forest_file_name = modelname + "_rotation_" + std::to_string(r) + ".tr";
+		const fs::path this_forest_file_name = modelname.parent_path() / modelname.stem().concat("_rotation_" + std::to_string(r)).replace_extension(modelname.extension());
 
 		// Read in this forest
-		forest[r].readFromFile(this_forest_file_name,n_trees,n_tree_levels);
+		forest[r].readFromFile(this_forest_file_name.string(),n_trees,n_tree_levels);
 		forest[r].getFeatureDefinitionString(this_rotation_feature_string);
 
 		if(!forest[r].isValid())
@@ -310,8 +317,8 @@ int main( int argc, char** argv )
 		{
 			for(int c = 1; c < n_classes; ++c)
 			{
-				const string phase_model_name = modelname + "_rotation_" + std::to_string(r) + "_phase_" + to_string(c) + ".tr";
-				phase_forest[r][c-1].readFromFile(phase_model_name,n_trees_phase,n_tree_levels_phase);
+				const fs::path phase_model_name = modelname.parent_path() / modelname.stem().concat("_rotation_" + std::to_string(r) + "_phase_" + to_string(c) ).replace_extension(modelname.extension());
+				phase_forest[r][c-1].readFromFile(phase_model_name.string(),n_trees_phase,n_tree_levels_phase);
 				if(!phase_forest[r][c-1].isValid())
 				{
 					cerr << " ERROR: invalid tree input!" << phase_model_name << endl;
@@ -330,8 +337,8 @@ int main( int argc, char** argv )
 
 		if(tracking_substructures)
 		{
-			const string this_rotation_subs_model_name = modelname + "_subs_rotation_" + std::to_string(r) + ".tr";
-			subs_forest[r].readFromFile(this_rotation_subs_model_name, n_trees_subs,n_tree_levels_subs);
+			const fs::path this_rotation_subs_model_name = modelname.parent_path() / modelname.stem().concat("_subs_rotation_" + std::to_string(r) ).replace_extension(modelname.extension());
+			subs_forest[r].readFromFile(this_rotation_subs_model_name.string(), n_trees_subs,n_tree_levels_subs);
 			if(!subs_forest[r].isValid())
 			{
 				cerr << "ERROR: invalid forest file: " << this_rotation_subs_model_name << endl;
@@ -390,7 +397,7 @@ int main( int argc, char** argv )
 	//--------------------------------------------------------------------------
 
 	// Open the video
-	vid_obj.open(videofile);
+	vid_obj.open(videofile.string());
 	if ( !vid_obj.isOpened() )
 	{
 		cerr  << "Could not open reference " << videofile << endl;
@@ -401,7 +408,7 @@ int main( int argc, char** argv )
 	// Get the frame rate
 	if(isnan(frame_rate))
 	{
-		frame_rate = ut::getFrameRate(videofile,videofile.substr(0,videofile.find_last_of("/")));
+		frame_rate = ut::getFrameRate(videofile.string(),videofile.parent_path().string());
 		if(isnan(frame_rate))
 		{
 			cerr << "Could not determine frame rate forn the video " << endl;
@@ -453,7 +460,7 @@ int main( int argc, char** argv )
 
 	// Attempt to load a mask
 	Mat_<unsigned char> valid_mask;
-	if( !ut::prepareMask(maskstring,Size(xsize,ysize),valid_mask,std::ceil(feature_to_win_ratio*radius/scale_factor),Size(xresize,yresize), featurehalfsize) )
+	if( !ut::prepareMask(maskstring.string(),Size(xsize,ysize),valid_mask,std::ceil(feature_to_win_ratio*radius/scale_factor),Size(xresize,yresize), featurehalfsize) )
 	{
 		cerr << "ERROR loading the mask: " << maskstring << endl;
 		return EXIT_FAILURE;
@@ -463,7 +470,7 @@ int main( int argc, char** argv )
 	Mat_<unsigned char> subs_valid_mask;
 	if(tracking_substructures)
 	{
-		if( !ut::prepareMask(maskstring,Size(xsize,ysize),subs_valid_mask,std::ceil(subs_feature_to_win_ratio*radius/scale_factor),Size(xresize,yresize), subs_featurehalfsize) )
+		if( !ut::prepareMask(maskstring.string(),Size(xsize,ysize),subs_valid_mask,std::ceil(subs_feature_to_win_ratio*radius/scale_factor),Size(xresize,yresize), subs_featurehalfsize) )
 		{
 			cerr << "ERROR loading the mask: " << maskstring << endl;
 			return EXIT_FAILURE;
@@ -499,7 +506,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_ori = particleFilterPosClassJoinedOri<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, filter_def_files[0], &valid_mask);
+				p_filt_ori = particleFilterPosClassJoinedOri<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, filter_def_files[0].string(), &valid_mask);
 				if (!p_filt_ori.checkInit())
 				{
 					cerr << "Error reading filter definition files " << endl;
@@ -516,7 +523,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_ori_phase = particleFilterPosClassJoinedOriPhase<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, frame_rate, filter_def_files[0], filter_def_files[1], &valid_mask);
+				p_filt_ori_phase = particleFilterPosClassJoinedOriPhase<C_N_VIEW_CLASSES>(yresize, xresize, n_particles, radius, frame_rate, filter_def_files[0].string(), filter_def_files[1].string(), &valid_mask);
 				if (!p_filt_ori_phase.checkInit())
 				{
 					cerr << "Error reading filter definition file " << endl;
@@ -530,7 +537,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_subs = particleFilterJoinedSingleStructs<C_N_VIEW_CLASSES,C_N_STRUCTURES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0], filter_def_files[1], filter_def_files[2], subs_class_names, &valid_mask,&subs_valid_mask);
+				p_filt_subs = particleFilterJoinedSingleStructs<C_N_VIEW_CLASSES,C_N_STRUCTURES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0].string(), filter_def_files[1].string(), filter_def_files[2].string(), subs_class_names, &valid_mask,&subs_valid_mask);
 				if (!p_filt_subs.checkInit())
 				{
 					cerr << "Error reading filter definition file " << endl;
@@ -544,7 +551,7 @@ int main( int argc, char** argv )
 					cerr << "Wrong number of filter definition files supplied" << endl;
 					return EXIT_FAILURE;
 				}
-				p_filt_subs_pca = particleFilterJoinedStructsPCA<C_N_VIEW_CLASSES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0], filter_def_files[1], filter_def_files[2], subs_class_names, &valid_mask,&subs_valid_mask);
+				p_filt_subs_pca = particleFilterJoinedStructsPCA<C_N_VIEW_CLASSES>(yresize,xresize,n_particles,radius,frame_rate, filter_def_files[0].string(), filter_def_files[1].string(), filter_def_files[2].string(), subs_class_names, &valid_mask,&subs_valid_mask);
 				if (!p_filt_subs_pca.checkInit())
 				{
 					cerr << "Error reading filter definition file " << endl;
@@ -666,13 +673,13 @@ int main( int argc, char** argv )
 	std::vector<ut::heartPresent_t> gro_tru_present;
 	if( display_mode == C_DISPLAY_MODE_GROUNDTRUTH || use_gro_truth_location)
 	{
-		if(ground_truth_track_filename.compare("none") == 0)
+		if(ground_truth_track_filename.string().compare("none") == 0)
 		{
 			cerr << "ERROR: Ground truth display or ground truth location results requested but no track file provided (use -g option)" << endl;
 			return EXIT_FAILURE;
 		}
 
-		if(!ut::readTrackFile(ground_truth_track_filename, n_frames, gro_tru_headup, gro_tru_radius, gro_tru_labelled, gro_tru_present,
+		if(!ut::readTrackFile(ground_truth_track_filename.string(), n_frames, gro_tru_headup, gro_tru_radius, gro_tru_labelled, gro_tru_present,
 						   gro_tru_y, gro_tru_x, gro_tru_ori_degrees, gro_tru_view, gro_tru_phase_point, gro_tru_phase) )
 		{
 			cerr << "Error reading the requested track file " << ground_truth_track_filename << endl;
@@ -688,14 +695,14 @@ int main( int argc, char** argv )
 	ofstream output_file;
 	if(output_detections)
 	{
-		output_file.open(output_file_name.c_str());
+		output_file.open(output_file_name.string().c_str());
 		if (!output_file.is_open())
 		{
 			cerr << "ERROR: Could not open file " << output_file_name << " for writing" << endl;
 			return EXIT_FAILURE;
 		}
 
-		output_file << "BEGIN" << " " << videofile << " " << modelname << " " << radius/scale_factor << " ";
+		output_file << "BEGIN" << " " << videofile << " " << modelname.string() << " " << radius/scale_factor << " ";
 		switch(test_problem)
 		{
 			case ut::ptClass:

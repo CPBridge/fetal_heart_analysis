@@ -5,11 +5,19 @@ project(fetal_heart_analysis)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 # Main executables
 add_executable(train_rotinv exec/src/train_rotinv.cpp)
 add_executable(test_rotinv exec/src/test_rotinv.cpp)
 add_executable(train_square exec/src/train_square.cpp)
 add_executable(test_square exec/src/test_square.cpp)
+
+# Some g++specific optimisations (feel free to add equivalents for other
+# compilers)
+if(CMAKE_COMPILER_IS_GNUCXX)
+	set(GCC_OPTIMISATION_FLAGS "-ffast-math -DEIGEN_NO_DEBUG")
+	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${GCC_OPTIMISATION_FLAGS}" )
+endif()
 
 # Third party dependencies
 # ------------------------

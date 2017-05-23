@@ -1,0 +1,17 @@
+# Phase acceleration noise standard deviation
+0.2
+
+# Initial rate gamma distribution shape and scale parameters
+50.6554331419 0.297382764568
+
+# Minimum and maximum permitted bpm
+100 200
+
+# Max number of mean shift iterations
+20
+
+# Phase mean shift kernel width
+0.25
+
+# Phase shift positional tolerance
+0.05

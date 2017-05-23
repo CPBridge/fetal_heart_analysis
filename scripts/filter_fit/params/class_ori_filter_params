@@ -1,0 +1,34 @@
+# View transition probability matrix
+0.90 0.05 0.05
+0.05 0.90 0.05
+0.05 0.05 0.90
+
+# Hidden Equilibrium Fraction
+0.2
+
+# Hidden Particles Time Constant
+4.0
+
+# Hidden weight
+0.2
+
+# Motion standard deviation
+1.0
+
+# Max number of mean shift iterations
+20
+
+# Spatial mean shift kernel width
+5.0
+
+# Mean shift positional tolerance
+1.0
+
+# Orientation Motion Standard Deviation
+0.05
+
+# Orientation mean shift kernel width
+0.25
+
+# Orientation mean shift tolerance
+0.05

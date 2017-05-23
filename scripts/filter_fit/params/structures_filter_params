@@ -1,0 +1,20 @@
+# Motion standard deviation as fraction of a overall prior variance
+0.3
+
+# Hidden Equilibrium Fraction
+0.2
+
+# Hidden Particles Time Constant
+4.0
+
+# Hidden weight
+0.02
+
+# Max number of mean shift iterations
+20
+
+# Spatial mean shift kernel width
+5.0
+
+# Mean shift positional tolerance
+1.0

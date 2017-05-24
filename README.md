@@ -177,6 +177,7 @@ Problem Type | Variables
 3 | Class, Position, Visibility, Cardiac Phase, Orientation
 4 | As in 3 plus cardiac structure locations (using a partitioned particle filter)
 5 | As in 3 plus cardiac structure locations (using PCA for structure locations)
+
 **Table 1** List of Problem Types
 
 In order to perform these tasks, there are a number of different models that must be trained and provided to the testing executable. There are two categories of model: random forest models and filter models. These are required in different combinations depending on the features (rotinv or square) used and the problem type.
@@ -192,6 +193,7 @@ jointOrientationRegressor | `<base>_ori.tr` | A random forest classifier in whic
 circularRegressor | `<base>_phase<n>.tr` | A circular regression forest for predicting the cardiac phase of a heart of class `n`. There is one such model per view class.
 jointOriPhaseRegressor | `<base>_phaseori<n>.tr` | A circular regression forest for predicting the cardiac phase of a heart of class `n` with an additional regressor in each leaf node for predicting the orientation using equivariant features from the RIF feature extraction process. There is one such model per view class.
 classifier (structures) | `<base>_subs.tr` | A random forest classifier trained to distinguish the different structures from each other and from a background class.
+
 **Table 2** List of random forest model types
 
 Each random forest model is stored in a text file with the arbitrary extension `.tr`. This lists all the split parameters and node distribution parameters needed to fully define the random forest model (see the [canopy](https://github.com/CPBridge/canopy) library for more details).
@@ -204,6 +206,7 @@ classifier | :white_check_mark: | | :white_check_mark: | :white_check_mark:
 jointOrientationRegressor | | :white_check_mark: | |
 circularRegressor | | | :white_check_mark: |
 jointOriPhaseRegressor | | | | :white_check_mark:
+
 **Table 3** Models produced by the `train_rotinv` executable with different options
 
 For the `train_square` executable, the corresponding table is:
@@ -212,6 +215,7 @@ Model | *none* | `-p`
 ---|---|---
 classifier | :white_check_mark: | :white_check_mark:
 circularRegressor | | :white_check_mark:
+
 **Table 4** Models produced by the `test_rotinv` executable with different options
 
 Note that in both cases you are asked to provide a base file name, and all the output models share this same filename stem with a different ending according to the second column of **Table 2**. Also note that for the `train_square` case, a separate version of each model is trained for each of a number of different orientations. These are stored in separate files with the rotation index in the filename. Finally note that the classifiers used for structures are the same as used for the heart, except they are trained on different data. Therefore, use the same options but provide a different dataset file (more on this later).
@@ -225,6 +229,7 @@ jointOrientationRegressor | | | :white_check_mark: | | |
 circularRegressor | | :white_check_mark: | | | |
 jointOriPhaseRegressor | | | | :white_check_mark: | :white_check_mark: | :white_check_mark:
 classifier ( structures) | | | | | :white_check_mark: | :white_check_mark:
+
 **Table 5** Random forest models required for each problem type in the `test_rotinv` executable.
 
 Model | 0 | 1 | 2 | 3 | 4 | 5
@@ -232,6 +237,7 @@ Model | 0 | 1 | 2 | 3 | 4 | 5
 classifier | :x: | :x: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark:
 circularRegressor | :x: | :x: | | :white_check_mark: | :white_check_mark: | :white_check_mark:
 classifier (structures) | :x: | :x: | | | :white_check_mark: | :white_check_mark:
+
 **Table 6** Random forest models required for each problem type in the `test_square` executable.
 
 The :x: symbol means that the problem type is not implemented with rectangular features.
@@ -251,6 +257,7 @@ classOriFilter | Models how the view class, position and orientation variables b
 phaseFilter | Models how the cardiac phase and cardiac phase rate variables behave. | `fit_phase_filter.py` | `phase_filter_params`
 partitionedStructuresFilter | Models the structures' positions using a partitioned particle filter. | `fit_partitioned_structs_filter.py` | `structures_filter_params`
 PCAStructuresFilter | Models the structures' positions using a principal component decomposition. | `fit_pca_structs_filter.py` | `structures_filter_params`
+
 **Table 7** List of filter types, the scripts used to produce their definition files, and their default parameters files.
 
 When running test using particle filters, the following filter files are required for the different problem types (apply for both `test_rotinv` and `test_square`).
@@ -261,6 +268,7 @@ When running test using particle filters, the following filter files are require
 | phaseFilter | | | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | partitionedStructuresFilter | | | | | :white_check_mark: | |
 | PCAStructuresFilter | | | | | | :white_check_mark: |
+
 **Table 8** Filter files required by different problem types
 
 ## Workflow Overview

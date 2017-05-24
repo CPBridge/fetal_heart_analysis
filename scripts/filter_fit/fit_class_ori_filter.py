@@ -189,6 +189,7 @@ if __name__ == '__main__':
 	parser.add_argument('--n_views','-v',type=int,help="number of views types labelled (ex background)")
 	parser.add_argument('--mean_shift_params','-m',help="Name of a mean-shift parameters file to append to the offset parameters",default='')
 	parser.add_argument('--exclude_list','-e',help="patient names to exclude from the dataset",default=[],nargs='*')
+	parser.add_argument('--cross_val','-c',action='store_true',help='Create filter files for each fold in a leave-one-out cross-validation')
 	parser.add_argument('--hidden_equilibrium_fraction','-H',type=float,help='override the hidden equilibrium fraction parameter with this value',default=np.nan)
 	parser.add_argument('--hidden_time_constant','-t',type=float,help='override the hidden time constant parameter with this value',default=np.nan)
 	parser.add_argument('--hidden_weight','-w',type=float,help='override the hidden weight parameter with this value',default=np.nan)
@@ -196,10 +197,21 @@ if __name__ == '__main__':
 	# Capture arguments to local variables for convenience
 	args = parser.parse_args()
 
+	if args.cross_val and args.exclude_list:
+		print("ERROR: Cannot use cross_val option and provide an exclude list")
+		sys.exit()
+
 	if args.n_views is None:
 		print "ERROR: The n_views parameter (-v) must be supplied (the number of labelled views, excluding the background class)"
 		exit()
 
 	# Make the function call
-	fit_class_ori_filter(args.track_directory,args.outfilename,args.n_views,mean_shift_params=args.mean_shift_params,excludelist=args.exclude_list,
+	if args.cross_val:
+		patients_list = ut.getPatientsInTrackDirectory(args.track_directory)
+		for patient in patients_list:
+			fit_class_ori_filter(args.track_directory,args.outfilename+'_ex'+patient,args.n_views,mean_shift_params=args.mean_shift_params,excludelist=[patient],
+				hidden_equilibrium_fraction=args.hidden_equilibrium_fraction,hidden_time_constant=args.hidden_time_constant,hidden_weight=args.hidden_weight)
+
+	else:
+		fit_class_ori_filter(args.track_directory,args.outfilename,args.n_views,mean_shift_params=args.mean_shift_params,excludelist=args.exclude_list,
 	              hidden_equilibrium_fraction=args.hidden_equilibrium_fraction,hidden_time_constant=args.hidden_time_constant,hidden_weight=args.hidden_weight)

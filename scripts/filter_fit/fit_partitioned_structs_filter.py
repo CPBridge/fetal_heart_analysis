@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Imports
-from os import linesep
+import os
 import sys
 import numpy as np
 import CPBUtils as ut
@@ -28,20 +28,20 @@ def fit_partitioned_structs_filter(subs_track_directory, heart_track_directory, 
 			with open(mean_shift_params,'r') as infile :
 				lines = infile.readlines()
 			if not np.isnan(hidden_equilibrium_fraction):
-				lines[4] = str(hidden_equilibrium_fraction) + linesep
+				lines[4] = str(hidden_equilibrium_fraction) + os.linesep
 			if not np.isnan(hidden_time_constant):
-				lines[7] = str(hidden_time_constant) + linesep
+				lines[7] = str(hidden_time_constant) + os.linesep
 			if not np.isnan(hidden_weight):
-				lines[10] = str(hidden_weight) + linesep
+				lines[10] = str(hidden_weight) + os.linesep
 			outfile.writelines(lines)
-			outfile.write(linesep)
+			outfile.write(os.linesep)
 
-		outfile.write("# Number of views" + linesep + str(nviews) + 2*linesep)
-		outfile.write("# Total number of structures" + linesep + str(n_structures) + 2*linesep)
-		outfile.write("# Structure Names and Views" + linesep)
+		outfile.write("# Number of views" + os.linesep + str(nviews) + 2*os.linesep)
+		outfile.write("# Total number of structures" + os.linesep + str(n_structures) + 2*os.linesep)
+		outfile.write("# Structure Names and Views" + os.linesep)
 		for name,views in zip(structure_names, viewsPerStructure) :
-			outfile.write(name + " " + " ".join(str(v) for v in views) + linesep)
-		outfile.write(linesep)
+			outfile.write(name + " " + " ".join(str(v) for v in views) + os.linesep)
+		outfile.write(os.linesep)
 
 		# Loop over the different views
 		for v in range(1,nviews+1) :
@@ -97,7 +97,7 @@ def fit_partitioned_structs_filter(subs_track_directory, heart_track_directory, 
 			# relative to the heart (i.e. the absolute distribution of the relative parameters)
 			abs_scores = np.zeros( n_structures_this_view )
 
-			outfile.write('# Start View'+linesep+str(v)+linesep+'# Number of structures in this view'+linesep+str(n_structures_this_view)+2*linesep)
+			outfile.write('# Start View'+os.linesep+str(v)+os.linesep+'# Number of structures in this view'+os.linesep+str(n_structures_this_view)+2*os.linesep)
 			for s_t in range(n_structures_this_view) :
 
 				# Remove any row containing a nan
@@ -113,17 +113,17 @@ def fit_partitioned_structs_filter(subs_track_directory, heart_track_directory, 
 				abs_scores[s_t] = np.linalg.slogdet(covar_param)[1]
 
 				# Write to the file
-				outfile.write("# Structure name" + linesep + structure_names[structuresPerView[v][s_t]] + linesep)
-				outfile.write("# Fourier expansion order" + linesep + str(fourier_orders_this_view[s_t]) + linesep)
-				outfile.write("# Systole Only" + linesep + ('1' if systole_only[structuresPerView[v][s_t]] else '0' ) + linesep)
-				outfile.write("# Mean" + linesep)
+				outfile.write("# Structure name" + os.linesep + structure_names[structuresPerView[v][s_t]] + os.linesep)
+				outfile.write("# Fourier expansion order" + os.linesep + str(fourier_orders_this_view[s_t]) + os.linesep)
+				outfile.write("# Systole Only" + os.linesep + ('1' if systole_only[structuresPerView[v][s_t]] else '0' ) + os.linesep)
+				outfile.write("# Mean" + os.linesep)
 				mean_param.tofile(outfile,sep=' ')
-				outfile.write(linesep)
-				outfile.write("# Covariance" + linesep)
+				outfile.write(os.linesep)
+				outfile.write("# Covariance" + os.linesep)
 				for row in covar_param:
 					row.tofile(outfile,sep=" ")
-					outfile.write(linesep)
-				outfile.write(linesep)
+					outfile.write(os.linesep)
+				outfile.write(os.linesep)
 
 			# **** NB ****
 			# Everything from here on is currently pointless - will find the optimal
@@ -206,10 +206,21 @@ if __name__ == '__main__' :
 	parser.add_argument('--nviews','-v',type=int,help="number of viewing planes",default=3)
 	parser.add_argument('--weight_precision','-r',type=float,help="weight precision (inverse variance) to use as a regularising term", default=1.0)
 	parser.add_argument('--exclude_list','-e',help="patient names to exclude from the dataset",default=[],nargs='*')
+	parser.add_argument('--cross_val','-c',action='store_true',help='Create filter files for each fold in a leave-one-out cross-validation')
 	parser.add_argument('--mean_shift_params','-m',help="file containing mean shift parameters to copy and place at the start of the output model file")
 	parser.add_argument('--hidden_equilibrium_fraction','-H',type=float,help='override the hidden equilibrium fraction parameter with this value',default=np.nan)
 	parser.add_argument('--hidden_time_constant','-t',type=float,help='override the hidden time constant parameter with this value',default=np.nan)
 	parser.add_argument('--hidden_weight','-w',type=float,help='override the hidden weight parameter with this value',default=np.nan)
 	args = parser.parse_args()
 
-	fit_partitioned_structs_filter(args.subs_track_directory, args.heart_track_directory, args.substructures_list_file, outfilename=args.outfilename, windowlength=args.windowlength, nviews=args.nviews, weight_precision=args.weight_precision, exclude_list=args.exclude_list, mean_shift_params=args.mean_shift_params, hidden_equilibrium_fraction=args.hidden_equilibrium_fraction, hidden_time_constant=args.hidden_time_constant, hidden_weight=args.hidden_weight)
+	if args.cross_val and args.exclude_list:
+		print("ERROR: Cannot use cross_val option and provide an exclude list")
+		sys.exit()
+
+	# Make the function call
+	if args.cross_val:
+		patients_list = ut.getPatientsInTrackDirectory(args.heart_track_directory)
+		for patient in patients_list:
+			fit_partitioned_structs_filter(args.subs_track_directory, args.heart_track_directory, args.substructures_list_file, outfilename=args.outfilename+'_ex'+patient, windowlength=args.windowlength, nviews=args.nviews, weight_precision=args.weight_precision, exclude_list=[patient], mean_shift_params=args.mean_shift_params, hidden_equilibrium_fraction=args.hidden_equilibrium_fraction, hidden_time_constant=args.hidden_time_constant, hidden_weight=args.hidden_weight)
+	else:
+		fit_partitioned_structs_filter(args.subs_track_directory, args.heart_track_directory, args.substructures_list_file, outfilename=args.outfilename, windowlength=args.windowlength, nviews=args.nviews, weight_precision=args.weight_precision, exclude_list=args.exclude_list, mean_shift_params=args.mean_shift_params, hidden_equilibrium_fraction=args.hidden_equilibrium_fraction, hidden_time_constant=args.hidden_time_constant, hidden_weight=args.hidden_weight)

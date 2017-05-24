@@ -110,7 +110,7 @@ $ cmake -D CANOPY_DIR=/home/fred/canopy -D RIFEATURES_DIR=/home/fred/RIFeatures 
 ```
 
 Once CMake has generated the relevant set of build files, you will need to use
-your platform's tool to complete the build process. E.g. on GNU/Linux with GNU make all you need is:
+your platform's tool to complete the build process. E.g. on GNU/Linux with GNU Make all you need is:
 
 ```bash
 $ make
@@ -275,7 +275,11 @@ When running test using particle filters, the following filter files are require
 
 This is an overview of the full experimental workflow. For more details, you will need to consult the relevant source files (most scripts and executables have help available if you pass the `-h` option). Where code examples are given, they pertain to GNU/Linux-like operating systems and may differ slightly on other platforms.
 
-###### 1. Obtain Labelled Training Data
+###### 1. Create Structures List
+
+You only need to complete this part if you wish to track the locations of cardiac structures. You need to create a list of the structures you wish to track following the format described in the README of the [heart_annotation_tool](https://github.com/CPBridge/heart_annotation_tool) repository.
+
+###### 2. Obtain Labelled Training Data
 
 This stage is not handled by the tools in this repository. The framework expects a dataset of videos of the fetal heart which meet the following criteria:
 
@@ -290,7 +294,7 @@ $ ./maskcrop.py /path/to/videos/subject001_1.avi /path/to/masks/subject001_mask.
 
 - Be annotated to give a corresponding track file (`.tk` file) of a particular format. The tool for performing this annotation is in a [separate repository](https://github.com/CPBridge/heart_annotation_tool), whose documentation also gives further details about the required format. Furthermore, if you wish to use structure tracking there must additionally be a structure track file (`.stk`), using the structure annotation tool in the above repository. The `.tk` and `.stk` files should have the same name as the video file, but with the `.avi` extension removed and replaced with the relevant extension.
 
-###### 2. Create Dataset Files
+###### 3. Create Dataset Files
 
 Dataset files are files defining a number of training examples to use when training a random forest model. Creating a dataset file involves finding all possible positive training patches from the track files, choosing a random subset of them, and choosing random negative/background examples. Scripts for performing these tasks are in the `datasets` directory.
 
@@ -314,15 +318,46 @@ However, most of the time when you are using structures, you will want matched d
 ./heartandsubsdataset.py /path/to/struct_tracks/ /path/to/tracks/ 0.5 /path/to/structure_list -n 5000 -v 3 -m /path/to/masks/ -o /path/to/output/dataset/file
 ```
 
-###### 3. Train Random Forest Models
+###### 4. Train Random Forest Models
 
-###### 4. Create Filter Definition Files
+Now you can train the random forests models using the dataset files produced in the previous stage. As described above, there are several different types of random model file needed for different problem types. Consult tables 5 and 6 above to work out which model files you need for the task you wish to perform and then 3 and 4 for the values of the `-a` and `-p` required to create them.
 
-###### 5. Test the Models
+The process is slightly different depending on whether you are using the rotinv or square pipeline, but many of the options are the same.
 
-###### 6. Summarise results
+For the rotinv pipeline (using rotation invariant features), we will use the `train_rotinv` executable to produce the models. This executable will be found in your build directory. The basic set of options (most of which are required) are:
 
-###### 7. Make Plots
+* `-d <dataset>` - The name of the dataset file to use.
+* `-v <video_directory>` - The directory containing all the videos that are mentioned in the dataset file.
+* `-o <output_base_name>` - The base of the filename for all output models.
+* `-f <feature_type>` - The image representation used for features. This must be one of `int` (image intensity), `grad` (image intensity gradient), `motion` (motion), or `mgof` (monogenic odd filter). Multiple may be listed, in which case the forest models may choose from any of the listed types during training.
+* `-j`, `-k` and `-m` - These are the three parameters of the rotation invariant feature set (each should be integer valued). If you are using multiple feature types, you can list different values for each type (or list one, which will be used for all the feature types).
+* `-a` and `-p` - These control which models are trained (see **Table 3**).
+* `-n` - The number of trees in each forest model (integer valued)
+* `-l` - The depth of trees (number of levels) in each forest model (integer valued)
+
+There are further options that can be found with the help `-h` option.
+
+The command will therefore look something like this:
+
+```bash
+$ ./train_rotinv -v /path/to/videos/directory/ -d /path/to/dataset_file -o /path/to/output/model -f grad motion -j 3 -k 3 -m 2 -a -p
+```
+For the `train_square` executable, most options are the same except that the `-j`, `-k`, `-m` options are missing as these relate to parameters specific to the rotation invariant features. Instead there are the following options:
+
+* `-O` - Number of (equally spaced) orientations at which to train models.
+* `-b` - Number of histogram bins for expansion of orientation histograms (only relevant for vector-valued features, i.e. not intensity).
+
+Note that the training procedure may take a long time (hours) to run if you choose to use a large number of trees and/or levels, and/or a large number of orientations with `train_square`. It will also use all processors it has available.
+
+###### 5. Create Filter Definition Files
+
+The filter definition files are produced by the scripts in the `scripts/filter_fit/` directory, as in **Table 7**. Each requires some basic inputs (such as the directory containing the track files, where to place the output file, and the location of the parameters file to use) and has some more advanced options. You can also pass a list of excluded subject-ids to each (`-e` option) to make sure the test set is omitted. Check the options for each script by passing the `-h`flag to the relevant script.
+
+###### 6. Test the Models
+
+###### 7. Summarise results
+
+###### 8. Make Plots
 
 ## References
 

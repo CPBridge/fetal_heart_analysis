@@ -818,3 +818,12 @@ def readDataset(filename) :
 		dict_row['phase'] = float(table_row[ds_phaseCol])
 
 	return dict_rows
+
+# Get a list of patients/subject in a directory containing trackfiles
+def getPatientsInTrackDirectory(track_directory):
+
+	_,trackfiles = getTracksList(track_directory,'.tk')
+
+	# Find the unique patients in this list
+	patients = [os.path.basename(f.rsplit('_',1)[0]) for f in trackfiles]
+	return list(set(patients))

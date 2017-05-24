@@ -241,21 +241,21 @@ Required filter models (apply for both `test_rotinv` and `test_square`).
 This table shows the models produced by the `train_rotinv` executable when called with different combinations of the `-a` (orientation) and `-p` (cardiac phase) options:
 
 Model | *none* | `-a` | `-p` | `-ap`
------||||
-classifier|:white_check_mark:||:white_check_mark:|:white_check_mark:
-jointOrientationRegressor||:white_check_mark:||
-circularRegressor|||:white_check_mark:|
-jointOriPhaseRegressor||||:white_check_mark:
+---|---|---|---|---
+classifier | :white_check_mark: | | :white_check_mark: | :white_check_mark:
+jointOrientationRegressor | | :white_check_mark: | |
+circularRegressor | | | :white_check_mark: |
+jointOriPhaseRegressor | | | | :white_check_mark:
 
 Forest models required during test time for different problem types (values of the `-p` option):
 
 Model | 0 | 1 | 2 | 3 | 4 | 5
------||||
-classifier|:white_check_mark:|:white_check_mark:||:white_check_mark:|:white_check_mark:|:white_check_mark:
-jointOrientationRegressor|||:white_check_mark:|||
-circularRegressor||:white_check_mark:||||
-jointOriPhaseRegressor||||:white_check_mark:|:white_check_mark:|:white_check_mark:
-classifier (structures)|||||:white_check_mark:|:white_check_mark:
+---|---|---|---|---|---|---
+classifier | :white_check_mark: | :white_check_mark: | | :white_check_mark: | :white_check_mark: | :white_check_mark:
+jointOrientationRegressor | | | :white_check_mark: | | |
+circularRegressor | | :white_check_mark: | | | |
+jointOriPhaseRegressor | | | | :white_check_mark: | :white_check_mark: | :white_check_mark:
+classifier ( structures) | | | | | :white_check_mark: | :white_check_mark:
 
 
 ###### Rectangular Features
@@ -263,17 +263,17 @@ classifier (structures)|||||:white_check_mark:|:white_check_mark:
 This table shows the models produced by the `train_square` executable when called with different combinations of the `-a` (orientation) and `-p` (cardiac phase) options:
 
 Model | *none* | `-p`
------||
-classifier|:white_check_mark:|:white_check_mark:
-circularRegressor||:white_check_mark:
+---|---|---
+classifier | :white_check_mark: | :white_check_mark:
+circularRegressor | | :white_check_mark:
 
 Forest models required during test time for different problem types (values of the `-p` option):
 
 Model | 0 | 1 | 2 | 3 | 4 | 5
------||||
-classifier|:x:|:x:|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:
-circularRegressor|:x:|:x:||:white_check_mark:|:white_check_mark:|:white_check_mark:
-classifier (structures)|:x:|:x:|||:white_check_mark:|:white_check_mark:
+---|---|---|---|---|---|---
+classifier | :x: | :x: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark:
+circularRegressor | :x: | :x: | | :white_check_mark: | :white_check_mark: | :white_check_mark:
+classifier (structures) | :x: | :x: | | | :white_check_mark: | :white_check_mark:
 
 The :x: symbol means that the problem type is not implemented with rectangular features.
 

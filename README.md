@@ -221,20 +221,20 @@ classifier (structures) | `<base>_subs.tr` | A random forest classifier trained 
 Types of filter model:
 
 Name | Description | Created With | Parameters File
----|---|---|
-classOriFilter | Models how the view class, position and orientation variables behave. |`fit_class_ori_filter.py`| `class_ori_filter_params`
-phaseFilter | Models how the cardiac phase and cardiac phase rate variables behave.| `fit_phase_filter.py` | `phase_filter_params`
-PartitionedStructuresFilter | Models the structures' positions using a partitioned particle filter. |`fit_partitioned_structs_filter.py`| `structures_filter_params`
-PCAStructuresFilter | Models the structures' positions using a principal component decomposition. |`fit_pca_structs_filter.py`| `structures_filter_params`
+---|---|---|---
+classOriFilter | Models how the view class, position and orientation variables behave. |  `fit_class_ori_filter.py` | `class_ori_filter_params`
+phaseFilter | Models how the cardiac phase and cardiac phase rate variables behave. | `fit_phase_filter.py` | `phase_filter_params`
+PartitionedStructuresFilter | Models the structures' positions using a partitioned particle filter. | `fit_partitioned_structs_filter.py` | `structures_filter_params`
+PCAStructuresFilter | Models the structures' positions using a principal component decomposition. | `fit_pca_structs_filter.py` | `structures_filter_params`
 
 Required filter models (apply for both `test_rotinv` and `test_square`).
 
-| Model | 0 | 1 | 2 | 3 | 4 | 5 |
-|-----| | | |
+| Filter Model | 0 | 1 | 2 | 3 | 4 | 5 |
+|-----|----|----|----|---|----|----|
 | classOriFilter | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | phaseFilter | | | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| PartitionedStructuresFilter| | | | | :white_check_mark: | |
-| PCAStructuresFilter| | | | | | :white_check_mark: |
+| PartitionedStructuresFilter | | | | | :white_check_mark: | |
+| PCAStructuresFilter | | | | | | :white_check_mark: |
 
 ###### Rotation Invariant Features
 

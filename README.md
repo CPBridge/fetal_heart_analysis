@@ -111,7 +111,7 @@ sudo apt install build-essential git cmake
 sudo apt install libopencv-dev libboost-dev libeigen3-dev
 
 # Install python dependencies
-sudo apt install python-numpy python-scipy python-matplotlib
+sudo apt install python-numpy python-scipy python-matplotlib python-opencv
 
 # Clone all the necessary repos
 git clone https://github.com/CPBridge/RIFeatures.git
@@ -229,12 +229,12 @@ PCAStructuresFilter | Models the structures' positions using a principal compone
 
 Required filter models (apply for both `test_rotinv` and `test_square`).
 
-Model | 0 | 1 | 2 | 3 | 4 | 5
------||||
-classOriFilterg |:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:
-phaseFilter|||:white_check_mark:|:white_check_mark:|:white_check_mark:|:white_check_mark:
-PartitionedStructuresFilter|||||:white_check_mark:|
-PCAStructuresFilter||||||:white_check_mark:
+| Model | 0 | 1 | 2 | 3 | 4 | 5 |
+|-----| | | |
+| classOriFilter | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| phaseFilter | | | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| PartitionedStructuresFilter| | | | | :white_check_mark: | |
+| PCAStructuresFilter| | | | | | :white_check_mark: |
 
 ###### Rotation Invariant Features
 

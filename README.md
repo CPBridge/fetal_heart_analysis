@@ -1,4 +1,4 @@
- # Fetal Heart Tools
+# Fetal Heart Tools
 
 This repository contains all the code to run the experiments in my DPhil thesis "Automated Analysis of Fetal Cardiac Ultrasound Videos". It implements a tool for automatically estimating information
 about each frame in ultrasound videos of the fetal heart, along with the surrounding
@@ -14,26 +14,43 @@ There are two parts to this repository:
 the training and testing of large experiments and provide other parts of the
 workflow such as analysis of results.
 
-## C++ Code
+## Quick Install on Ubuntu
+
+The following script handles the entire install process including installing all dependencies, cloning all relevant repositories from Github, and compiling the C++ parts of the project for Ubuntu (it will likely work on most Ubuntu derivatives also). Make sure you are in the directory that you wish to contain the code **before** running it:
+
+```bash
+# Install build dependencies
+sudo apt install build-essential git cmake
+
+# Install third party C++ libraries
+sudo apt install libopencv-dev libboost-dev libeigen3-dev
+
+# Install python dependencies
+sudo apt install python-numpy python-scipy python-matplotlib python-opencv
+
+# Clone all the necessary repos
+git clone https://github.com/CPBridge/RIFeatures.git
+git clone https://github.com/CPBridge/monogenic.git
+git clone https://github.com/CPBridge/canopy.git
+git clone https://github.com/CPBridge/fetal_heart_analysis.git
+
+# Make a build directory
+mkdir build
+cd build
+
+# Run the build process
+cmake -D CANOPY_DIR=../canopy -D RIFEATURES_DIR=../RIFeatures -D MONOGENIC_DIR=../monogenic ../fetal_heart_analysis/cpp/
+make
+```
+For other operating systems, or to have finer control over the installation process, read the full installation instructions below.
+
+## Full Installation Guide
+
+#### C++ Code
 
 ###### Portability
 
 I use exclusively GNU/Linux-based operating systems for my work and therefore the entire pipeline has been thoroughly tested on Ubuntu and Manjaro (Arch). However, I have been careful to use cross-platform libraries everywhere, along with a cross-platform build tool (CMake) to ensure that there is no reason that the C++ code won't compile and run on Windows and MacOS. That said, I have not been able to test this. If you are using this code on other platforms please let me know how it works out!
-
-###### Overview of the Code
-
-The C++ code is organised into the following directories:
-
-- `exec` : This contains the top-level code for four executables. There are separate train and test programmes using rotation invariant features and rectangular features, giving `train_rotinv`, `test_rotinv`, `train_square`, and `test_square`.
-- `features` : This contains code for extracting features from the images to use
-in the random forests models.
-- `forests` : This contains code for the random forest models used for analysing
-the images, based on my [canopy](https://github.com/CPBridge/canopy) library.
-- `filters` : This contains code for implementing the particle filters that link
-estimates over time.
-- `utilities` : This contains utility functions and definitions that are used
-throughout the project.
-
 
 ###### Dependencies
 
@@ -62,7 +79,7 @@ Furthermore, you will need a copy of the following code found in my other reposi
 
 - [CPBridge/RIFeatures](https://github.com/CPBridge/RIFeatures) : An OpenCV/C++ implementation of rotation invariant feature extraction.
 - [CPBridge/monogenic](https://github.com/CPBridge/monogenic) : An OpenCV/C++ implementation of the monogenic signal.
-- [CPBridge/RIFeatures](https://github.com/CPBridge/canopy) : A header-only C++ library for random forests.
+- [CPBridge/canopy](https://github.com/CPBridge/canopy) : A header-only C++ library for random forests.
 
 You can straightforwardly clone these from Github with commands like the following on Unix-like systems:
 
@@ -99,41 +116,9 @@ your platform's tool to complete the build process. E.g. on GNU/Linux with GNU m
 $ make
 ```
 
-###### Quick Install on Ubuntu and Derivatives
+#### Scripts
 
-The following script handles the entire install process including installing all dependencies, cloning all relevant repositories from Github, and compiling the C++ parts of the project. Make sure you are in the directory that you wish to contain the code **before** running it:
-
-```bash
-# Install build dependencies
-sudo apt install build-essential git cmake
-
-# Install third party C++ libraries
-sudo apt install libopencv-dev libboost-dev libeigen3-dev
-
-# Install python dependencies
-sudo apt install python-numpy python-scipy python-matplotlib python-opencv
-
-# Clone all the necessary repos
-git clone https://github.com/CPBridge/RIFeatures.git
-git clone https://github.com/CPBridge/monogenic.git
-git clone https://github.com/CPBridge/canopy.git
-git clone https://github.com/CPBridge/fetal_heart_analysis.git
-
-# Make a build directory
-mkdir build
-cd build
-
-# Run the build process
-cmake -D CANOPY_DIR=../canopy -D RIFEATURES_DIR=../RIFeatures -D MONOGENIC_DIR=../monogenic ../fetal_heart_analysis/cpp/
-make
-```
-
-
-## Scripts
-
-###### Installation and Dependencies
-
-To run the scripts you will need a Python 2.7 interpreter (I've been using 2.7 but it may work on earlier versions). You will also need the following very common third-party packages, which are available in all good package management systems:
+To run the scripts you will need a Python 2 interpreter (I've been using 2.7 but it may work on earlier versions). You will also need the following very common third-party packages, which are available in all good package management systems:
 
 - [numpy](www.numpy.org) : Basic package for numeric/scientific computing
 - [scipy](https://www.scipy.org/) : Further numeric and scientific libraries
@@ -142,9 +127,23 @@ To run the scripts you will need a Python 2.7 interpreter (I've been using 2.7 b
 
 Additionally, you need to make sure that the interpreter can find the `scripts/utilities` directory, as some scripts depend on the modules in there. You can do this by, for example, adding that directory to your `PYTHONPATH` environment variable either temporarily or permanently.
 
-###### Overview
+## Overview of Repository Layout
 
-The scripts are placed into several subdirectories according to the task they perform:
+At the top level, the repository is divided into the `cpp` directory, which contains the C++ code for training random forest models and the testing executables, and the `scripts` directory, which contains python scripts to perform various peripheral tasks.
+
+Within the `cpp` directory, the C++ code is organised into the following subdirectories:
+
+- `exec` : This contains the top-level code for four executables. There are separate train and test programmes using rotation invariant features and rectangular features, giving `train_rotinv`, `test_rotinv`, `train_square`, and `test_square`.
+- `features` : This contains code for extracting features from the images to use
+in the random forests models.
+- `forests` : This contains code for the random forest models used for analysing
+the images, based on my [canopy](https://github.com/CPBridge/canopy) library.
+- `filters` : This contains code for implementing the particle filters that link
+estimates over time.
+- `utilities` : This contains utility functions and definitions that are used
+throughout the project.
+
+Within the `scripts` directory, the scripts are placed into several subdirectories according to the task they perform:
 
 - `masks` : Tool for creating image ROI masks.
 - `datasets` : Scripts for creating and managing dataset files, which are used to train random forest models.
@@ -152,6 +151,117 @@ The scripts are placed into several subdirectories according to the task they pe
 - `run` : Scripts for coordination of cross-validation experiments with multiple parameter sets.
 - `analysis` : Scripts for performing analysis of results and making plots and charts.
 - `utilities` : These are python modules that are not intended to be called directly, but are used by scripts in the other directories.
+
+## Models and Tasks
+
+The main task of the video analysis software (implemented in the C++ part of the code) is to use a combination of particle filters and random forest models in order to track the following variables of interest within ultrasound videos of the fetal heart:
+
+* Visibility of the heart in the image
+* View plane classification (four-chamber view, left ventricular outflow tract view, three vessels view)
+* Position of the heart in the image
+* Orientation of the heart in the image
+* Cardiac phase (point in the cardiac cycle)
+* Locations of cardiac structures of interest
+
+There are in fact two parallel pipelines, one which uses rotation invariant features for analysing the images, and another that uses traditional rectangular features. This difference also has implications for the design of the particle filters, hence the two different pipelines.
+
+For each of the pipelines there are two executables built by the C++ code, one for training and one for testing. This gives `train_rotinv`, `train_square`, `test_rotinv`, and `test_square`.
+
+Both of the testing executables can be run in a number of different modes, or 'problem types', which solve increasingly more complex tasks. There six modes (numbered 0 to 5), although the first two can only be used with `test_rotinv`. To control the mode, you pass it to the executable using the `-p` option (more on this later). The variables tracked in each of the different problem types is as follows:
+
+Problem Type | Variables
+---|---
+0 | Class, Position, Visibility
+1 | Class, Position, Visibility, Cardiac Phase
+2 | Class, Position, Visibility, Orientation
+3 | Class, Position, Visibility, Cardiac Phase, Orientation
+4 | As in 3 plus cardiac structure locations (using a partitioned particle filter)
+5 | As in 3 plus cardiac structure locations (using PCA for structure locations)
+**Table 1** List of Problem Types
+
+In order to perform these tasks, there are a number of different models that must be trained and provided to the testing executable. There are two categories of model: random forest models and filter models. These are required in different combinations depending on the features (rotinv or square) used and the problem type.
+
+#### Random Forest Models
+
+There are several different types of random forest model needed for different tasks. These are listed in the table below:
+
+Name | Filename | Description
+-|-|-|
+classifier | `<base>.tr` | A random forest classifier trained to distinguish the different view classes and a background class.
+jointOrientationRegressor | `<base>_ori.tr` | A random forest classifier in which each leaf node also contains a regressor for each class for predicting the orientation using equivariant features from the RIF feature extraction process.
+circularRegressor | `<base>_phase<n>.tr` | A circular regression forest for predicting the cardiac phase of a heart of class `n`. There is one such model per view class.
+jointOriPhaseRegressor | `<base>_phaseori<n>.tr` | A circular regression forest for predicting the cardiac phase of a heart of class `n` with an additional regressor in each leaf node for predicting the orientation using equivariant features from the RIF feature extraction process. There is one such model per view class.
+classifier (structures) | `<base>_subs.tr` | A random forest classifier trained to distinguish the different structures from each other and from a background class.
+**Table 2** List of random forest model types
+
+Each random forest model is stored in a text file with the arbitrary extension `.tr`. This lists all the split parameters and node distribution parameters needed to fully define the random forest model (see the [canopy](https://github.com/CPBridge/canopy) library for more details).
+
+The training executables train multiple forest models at once, according to the `-a` (orientation) and `-p` (cardiac phase) options. For the `train_rotinv` executable, the outputs produced are as follows:
+
+Model | *none* | `-a` | `-p` | `-ap`
+---|---|---|---|---
+classifier | :white_check_mark: | | :white_check_mark: | :white_check_mark:
+jointOrientationRegressor | | :white_check_mark: | |
+circularRegressor | | | :white_check_mark: |
+jointOriPhaseRegressor | | | | :white_check_mark:
+**Table 3** Models produced by the `train_rotinv` executable with different options
+
+For the `train_square` executable, the corresponding table is:
+
+Model | *none* | `-p`
+---|---|---
+classifier | :white_check_mark: | :white_check_mark:
+circularRegressor | | :white_check_mark:
+**Table 4** Models produced by the `test_rotinv` executable with different options
+
+Note that in both cases you are asked to provide a base file name, and all the output models share this same filename stem with a different ending according to the second column of **Table 2**. Also note that for the `train_square` case, a separate version of each model is trained for each of a number of different orientations. These are stored in separate files with the rotation index in the filename. Finally note that the classifiers used for structures are the same as used for the heart, except they are trained on different data. Therefore, use the same options but provide a different dataset file (more on this later).
+
+Different problem types require different combinations of random forest models during testing. The following two tables show these requirements for the `test_rotinv` and `test_square` executables respectively.
+
+Model | 0 | 1 | 2 | 3 | 4 | 5
+---|---|---|---|---|---|---
+classifier | :white_check_mark: | :white_check_mark: | | :white_check_mark: | :white_check_mark: | :white_check_mark:
+jointOrientationRegressor | | | :white_check_mark: | | |
+circularRegressor | | :white_check_mark: | | | |
+jointOriPhaseRegressor | | | | :white_check_mark: | :white_check_mark: | :white_check_mark:
+classifier ( structures) | | | | | :white_check_mark: | :white_check_mark:
+**Table 5** Random forest models required for each problem type in the `test_rotinv` executable.
+
+Model | 0 | 1 | 2 | 3 | 4 | 5
+---|---|---|---|---|---|---
+classifier | :x: | :x: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark:
+circularRegressor | :x: | :x: | | :white_check_mark: | :white_check_mark: | :white_check_mark:
+classifier (structures) | :x: | :x: | | | :white_check_mark: | :white_check_mark:
+**Table 6** Random forest models required for each problem type in the `test_square` executable.
+
+The :x: symbol means that the problem type is not implemented with rectangular features.
+
+
+#### Particle Filter Models
+
+The behaviour of the particle filters is governed by certain parameters that are stored in definition files. These definition files are shared by the rotinv and square executables (although the structure of the particle filters are slightly different in each case, they still require the same parameters).
+
+The definition files consist of parameters that are fixed and specified by the user, as well as parameters that are fitted from training data using maximum likelihood estimation. The fixed parameters are stored in parameter files (default versions of these are found in the `scripts/filter_fit/params` directory), which are human readable to be easily editable. Each filter file is produced by a python script, which combines the fixed parameters in the parameter file with fitted parameters from a training set to produce the full filter definition file.
+
+The following table lists the types of filter models, the scripts used to produce them, and the name of the default parameters file:
+
+Name | Description | Created With | Parameters File
+---|---|---|---
+classOriFilter | Models how the view class, position and orientation variables behave. |  `fit_class_ori_filter.py` | `class_ori_filter_params`
+phaseFilter | Models how the cardiac phase and cardiac phase rate variables behave. | `fit_phase_filter.py` | `phase_filter_params`
+partitionedStructuresFilter | Models the structures' positions using a partitioned particle filter. | `fit_partitioned_structs_filter.py` | `structures_filter_params`
+PCAStructuresFilter | Models the structures' positions using a principal component decomposition. | `fit_pca_structs_filter.py` | `structures_filter_params`
+**Table 7** List of filter types, the scripts used to produce their definition files, and their default parameters files.
+
+When running test using particle filters, the following filter files are required for the different problem types (apply for both `test_rotinv` and `test_square`).
+
+| Filter Model | 0 | 1 | 2 | 3 | 4 | 5 |
+|-----|----|----|----|---|----|----|
+| classOriFilter | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| phaseFilter | | | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| partitionedStructuresFilter | | | | | :white_check_mark: | |
+| PCAStructuresFilter | | | | | | :white_check_mark: |
+**Table 8** Filter files required by different problem types
 
 ## Workflow Overview
 
@@ -205,77 +315,6 @@ However, most of the time when you are using structures, you will want matched d
 ###### 6. Summarise results
 
 ###### 7. Make Plots
-
-## Models
-
-Types of forest model:
-
-Name | Filename | Description
--|-|-|
-classifier | `<base>.tr` | A random forest classifier trained to distinguish the different view classes and a background class.
-jointOrientationRegressor | `<base>_ori.tr` | A random forest classifier in which each leaf node also contains a regressor for each class for predicting the orientation using equivariant features from the RIF feature extraction process.
-circularRegressor | `<base>_phase<n>.tr` | A circular regression forest for predicting the cardiac phase of a heart of class `n`. There is one such model per view class.
-jointOriPhaseRegressor | `<base>_phaseori<n>.tr` | A circular regression forest for predicting the cardiac phase of a heart of class `n` with an additional regressor in each leaf node for predicting the orientation using equivariant features from the RIF feature extraction process. There is one such model per view class.
-classifier (structures) | `<base>_subs.tr` | A random forest classifier trained to distinguish the different structures from each other and from a background class.
-
-Types of filter model:
-
-Name | Description | Created With | Parameters File
----|---|---|---
-classOriFilter | Models how the view class, position and orientation variables behave. |  `fit_class_ori_filter.py` | `class_ori_filter_params`
-phaseFilter | Models how the cardiac phase and cardiac phase rate variables behave. | `fit_phase_filter.py` | `phase_filter_params`
-PartitionedStructuresFilter | Models the structures' positions using a partitioned particle filter. | `fit_partitioned_structs_filter.py` | `structures_filter_params`
-PCAStructuresFilter | Models the structures' positions using a principal component decomposition. | `fit_pca_structs_filter.py` | `structures_filter_params`
-
-Required filter models (apply for both `test_rotinv` and `test_square`).
-
-| Filter Model | 0 | 1 | 2 | 3 | 4 | 5 |
-|-----|----|----|----|---|----|----|
-| classOriFilter | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| phaseFilter | | | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| PartitionedStructuresFilter | | | | | :white_check_mark: | |
-| PCAStructuresFilter | | | | | | :white_check_mark: |
-
-###### Rotation Invariant Features
-
-This table shows the models produced by the `train_rotinv` executable when called with different combinations of the `-a` (orientation) and `-p` (cardiac phase) options:
-
-Model | *none* | `-a` | `-p` | `-ap`
----|---|---|---|---
-classifier | :white_check_mark: | | :white_check_mark: | :white_check_mark:
-jointOrientationRegressor | | :white_check_mark: | |
-circularRegressor | | | :white_check_mark: |
-jointOriPhaseRegressor | | | | :white_check_mark:
-
-Forest models required during test time for different problem types (values of the `-p` option):
-
-Model | 0 | 1 | 2 | 3 | 4 | 5
----|---|---|---|---|---|---
-classifier | :white_check_mark: | :white_check_mark: | | :white_check_mark: | :white_check_mark: | :white_check_mark:
-jointOrientationRegressor | | | :white_check_mark: | | |
-circularRegressor | | :white_check_mark: | | | |
-jointOriPhaseRegressor | | | | :white_check_mark: | :white_check_mark: | :white_check_mark:
-classifier ( structures) | | | | | :white_check_mark: | :white_check_mark:
-
-
-###### Rectangular Features
-
-This table shows the models produced by the `train_square` executable when called with different combinations of the `-a` (orientation) and `-p` (cardiac phase) options:
-
-Model | *none* | `-p`
----|---|---
-classifier | :white_check_mark: | :white_check_mark:
-circularRegressor | | :white_check_mark:
-
-Forest models required during test time for different problem types (values of the `-p` option):
-
-Model | 0 | 1 | 2 | 3 | 4 | 5
----|---|---|---|---|---|---
-classifier | :x: | :x: | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark:
-circularRegressor | :x: | :x: | | :white_check_mark: | :white_check_mark: | :white_check_mark:
-classifier (structures) | :x: | :x: | | | :white_check_mark: | :white_check_mark:
-
-The :x: symbol means that the problem type is not implemented with rectangular features.
 
 ## References
 

@@ -351,13 +351,50 @@ Note that the training procedure may take a long time (hours) to run if you choo
 
 ###### 5. Create Filter Definition Files
 
-The filter definition files are produced by the scripts in the `scripts/filter_fit/` directory, as in **Table 7**. Each requires some basic inputs (such as the directory containing the track files, where to place the output file, and the location of the parameters file to use) and has some more advanced options. You can also pass a list of excluded subject-ids to each (`-e` option) to make sure the test set is omitted. Check the options for each script by passing the `-h`flag to the relevant script.
+The filter definition files are produced by the scripts in the `scripts/filter_fit/` directory, as in **Table 7**. Each requires some basic inputs (such as the directory containing the track files, where to place the output file, and the location of the parameters file to use) and has some more advanced options. You can also pass a list of excluded subject-ids to each (`-e` option) to make sure the test set is omitted. Check the options for each script by passing the `-h` flag to the relevant script.
+
+Some basic examples are as follows:
+
+```bash
+# Fit a classOriFilter
+./fit_class_ori_filter 3 /path/to/trackfiles/ params/class_ori_filter_params /path/to/output -e subject001
+
+# Fit a phaseFilter
+./fit_phase_filter /path/to/trackfiles/ /path/to/videofiles/ params/phase_filter_params /path/to/output -e subject001
+
+# Fit a partitionedStructuresFilter
+./fit_pca_structs_filter 3 /path/to/structure_trackfiles/ /path/to/heart_trackfiles/ /path/to/structure_list params/structures_filter_params /path/to/output -e subject001
+
+# Fit a PCAStructuresFilter
+./fit_partitioned_structs_filter 3 /path/to/structure_trackfiles/ /path/to/heart_trackfiles/ /path/to/structure_list params/structures_filter_params /path/to/output -e subject001
+
+```
+
+Note that the '3's relate to the number of viewing planes used in the annotations (excluding the background class).
 
 ###### 6. Test the Models
+
+The testing executables (`test_rotinv` and `test_square`) take one video file, a number of random forest and filter models, and uses the models to estimate the value of the variables from each frame of the video. They should run at high frame rates, and can display the results on screen and/or write the frame-by-frame results to a file.
+
+There are a few basic arguments that are required and a large number of other options. Most of these overlap for the the two executables.
+
+The basic options for both executables are as follows:
+* `-v` : The name of the video file to test.
+* `-r` : The radius of the heart in the video frames (in pixels). This is the only user-supplied data about the input video file.
+* `-m` : The base name for the random forest model files. In order to find additional models (such as cardiac phase regression models etc), the extensions will be added according to the values in **Table 2**, so make sure all the necessary models exist for the problem type you are using and are placed in the same directory. All these models must also use exactly the same feature sets, which will always be the case if they were generated using a single run of the training executable, as is recommended.
+* `-k` : The name of the file to use as a mask of the ultrasound fan area (as described above).
+* `-p` : The problem type, as defined in **Table 1**. An integer between 0 and 5 (there is in fact a value of 6 that also attempts to detect the fetal abdomen using a Hough forest, this feature sort of works but was mostly abandoned and hasn't been documented in this readme).
+
+Other options of interest include:
+
+
+
 
 ###### 7. Summarise results
 
 ###### 8. Make Plots
+
+**How to match sizes for structures**
 
 ## References
 

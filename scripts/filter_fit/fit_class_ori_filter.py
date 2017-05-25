@@ -184,10 +184,10 @@ if __name__ == '__main__':
 
 	# Set up argument parser
 	parser = ap.ArgumentParser(description='Work out spatial offsets for class transitions from track files')
+	parser.add_argument('n_views',type=int,help="number of views types labelled (ex background)")
 	parser.add_argument('track_directory',help="directory containing the track files")
+	parser.add_argument('mean_shift_params',help="Name of a mean-shift parameters file to append to the offset parameters")
 	parser.add_argument('outfilename',help="name of the output file")
-	parser.add_argument('--n_views','-v',type=int,help="number of views types labelled (ex background)")
-	parser.add_argument('--mean_shift_params','-m',help="Name of a mean-shift parameters file to append to the offset parameters",default='')
 	parser.add_argument('--exclude_list','-e',help="patient names to exclude from the dataset",default=[],nargs='*')
 	parser.add_argument('--cross_val','-c',action='store_true',help='Create filter files for each fold in a leave-one-out cross-validation')
 	parser.add_argument('--hidden_equilibrium_fraction','-H',type=float,help='override the hidden equilibrium fraction parameter with this value',default=np.nan)
@@ -200,10 +200,6 @@ if __name__ == '__main__':
 	if args.cross_val and args.exclude_list:
 		print("ERROR: Cannot use cross_val option and provide an exclude list")
 		sys.exit()
-
-	if args.n_views is None:
-		print "ERROR: The n_views parameter (-v) must be supplied (the number of labelled views, excluding the background class)"
-		exit()
 
 	# Make the function call
 	if args.cross_val:

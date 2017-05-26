@@ -48,11 +48,11 @@ For other operating systems, or to have finer control over the installation proc
 
 #### C++ Code
 
-###### Portability
+#### Portability
 
 I use exclusively GNU/Linux-based operating systems for my work and therefore the entire pipeline has been thoroughly tested on Ubuntu and Manjaro (Arch). However, I have been careful to use cross-platform libraries everywhere, along with a cross-platform build tool (CMake) to ensure that there is no reason that the C++ code won't compile and run on Windows and MacOS. That said, I have not been able to test this. If you are using this code on other platforms please let me know how it works out!
 
-###### Dependencies
+#### Dependencies
 
 The following third party open-source C++ libraries are necessary to compile and
 run the code in this project. They are all common and available on most platforms
@@ -93,7 +93,7 @@ $ git clone https://github.com/CPBridge/canopy.git
 You **do not** need to build or install the code in the above repositories - everything is handled
 by the build process for this repository. You just need to download the source code.
 
-###### Compiling
+#### Compiling
 
 You should be able to use [CMake](https://cmake.org/) to configure your platform's
 build process. Perform an out-of-source build and tell CMake to find the source in this repository's
@@ -271,30 +271,44 @@ When running test using particle filters, the following filter files are require
 
 **Table 8** Filter files required by different problem types
 
-## Workflow Overview
+## Preparing Training Data
 
-This is an overview of the full experimental workflow. For more details, you will need to consult the relevant source files (most scripts and executables have help available if you pass the `-h` option). Where code examples are given, they pertain to GNU/Linux-like operating systems and may differ slightly on other platforms.
+In order to use the tools in this repository, you will need a suitable set of fetal heart ultrasound videos. This section takes you through preparing this data for use with the software.
 
-###### 1. Create Structures List
+#### 1. Obtain Video Data
 
-You only need to complete this part if you wish to track the locations of cardiac structures. You need to create a list of the structures you wish to track following the format described in the README of the [heart_annotation_tool](https://github.com/CPBridge/heart_annotation_tool) repository.
-
-###### 2. Obtain Labelled Training Data
-
-This stage is not handled by the tools in this repository. The framework expects a dataset of videos of the fetal heart which meet the following criteria:
+The framework expects a dataset of videos of the fetal heart which meet the following criteria:
 
 - Be in the `.avi` format.
 - Be placed in a single directory.
 - Have names of the form `<subject-id>_<no>.avi` where `<subject-id>` is an arbitrary string that is the same for all videos captured from the same subject, and `<no>` is a positive integer number (of any length) that differentiates between the different videos for each subject. E.g. `subject001_3.avi` for the third video from subject `subject001` or `123456_10.avi` for the 10th video from subject `123456`. (There is no requirement that numbers are consecutive, just unique).
-- Be accompanied by a `.png` image file that represents the ROI mask of the videos for a single subject. The ROI mask image should be non-zero within the ultrasound fan area (the area containing actual image information) and zero elsewhere (in blank areas and areas containing textual information etc that should be ignored by the image processing pipeline). The masks should be stored in a separate directory and have the format `<subject-id>_mask.png`. You can use the simple `maskcrop.py` tool in the `masks` directory to help you manually crop a polygonal mask from a video file.
+- Additionally you should place a text file called "patients" in the directory containing the videos and list the subjects (one per line) in that file.
+
+#### 2. Create Region-of-Interest Masks
+
+The videos should be accompanied by a `.png` image file that represents the ROI mask of the videos for a single subject. The ROI mask image should be non-zero within the ultrasound fan area (the area containing actual image information) and zero elsewhere (in blank areas and areas containing textual information etc that should be ignored by the image processing pipeline). The masks should be stored in a separate directory and have the format `<subject-id>_mask.png`. You can use the simple `maskcrop.py` tool in the `masks` directory to help you manually crop a polygonal mask from a video file.
 
 ```bash
 $ ./maskcrop.py /path/to/videos/subject001_1.avi /path/to/masks/subject001_mask.png
 ```
 
-- Be annotated to give a corresponding track file (`.tk` file) of a particular format. The tool for performing this annotation is in a [separate repository](https://github.com/CPBridge/heart_annotation_tool), whose documentation also gives further details about the required format. Furthermore, if you wish to use structure tracking there must additionally be a structure track file (`.stk`), using the structure annotation tool in the above repository. The `.tk` and `.stk` files should have the same name as the video file, but with the `.avi` extension removed and replaced with the relevant extension.
+#### 3. Annotate 'Global' Heart Variables
 
-###### 3. Create Dataset Files
+Each video should be accompanied by a *track file*, which contains the manual ground truth annotations of the heart's radius, visibility, location, orientation, view class, and cardiac phase in each frame of the video. These files are simple text files with the `.tk` extension and a certain layout. The tool for performing this annotation and producing the track files is in a separate repository at [CPBridge/heart_annotation_tool](https://github.com/CPBridge/heart_annotation_tool), whose documentation also gives further details about how to use it.
+
+#### 4. Create Structures List
+
+You only need to complete this part if you wish to track the locations of cardiac structures. You need to create a list of the structures you wish to track following the format described in the README of the [heart_annotation_tool](https://github.com/CPBridge/heart_annotation_tool) repository.
+
+#### 5. Annotate Structure Locations
+
+You only need to complete this part if you wish to track the locations of cardiac structures. Manual ground truth annotations are stored in a *structure track file* (`.stk`) file, which are produced with another tool in the [heart_annotation_tool](https://github.com/CPBridge/heart_annotation_tool) repository.
+
+## Basic Workflow - Training and Testing a Model
+
+This is an overview of a basic experimental workflow that takes you through training models and testing them on unseen videos. For more details, you will need to consult the relevant source files (most scripts and executables have help available if you pass the `-h` option). Where code examples are given, they pertain to GNU/Linux-like operating systems and may differ slightly on other platforms.
+
+#### 1. Create Dataset Files
 
 Dataset files are files defining a number of training examples to use when training a random forest model. Creating a dataset file involves finding all possible positive training patches from the track files, choosing a random subset of them, and choosing random negative/background examples. Scripts for performing these tasks are in the `datasets` directory.
 
@@ -304,7 +318,7 @@ To create a dataset file to train the random forests for 'global' variable estim
 $ ./heartdatasets.py /path/to/tracks/ -v 3 -n 5000 -m /path/to/masks/ -o /path/to/output/dataset/file
 ```
 
-If you are running a leave-one-out cross validation experiment, you can use the `-c` option to automatically generate one dataset file for each fold (each fold excludes a single subject, according to the subject-id part of the video's file name, and the relevant dataset file's name indicates which subject was excluded by appending `_ex<subject-id>`). There are some other options here (jittering the training data for example), that you can look into (use `-h` for a list). One particularly important one is the `-f` option which allows you to specify that the dataset should not contain examples from the first few frames of a video (`-f 1` will omit the first frame and so on). If you wish to train models using motion features, you will need to use this as motion is not available in the first frame.
+There are some other options here (jittering the training data for example), that you can look into (use `-h` for a list). One particularly important one is the `-f` option which allows you to specify that the dataset should not contain examples from the first few frames of a video (`-f 1` will omit the first frame and so on). If you wish to train models using motion features, you will need to use this as motion is not available in the first frame.
 
 The file `substrdatasetsfromtracks.py` creates dataset files for structures. The usage is very similar to `heartdatasets.py`, but some additional information is needed. The directories containing both the `.stk` and `.tk` files must be passed as the first and second positional arguments respectively. The third positional argument is the fraction of the heart radius to use as the patch size for detecting structures. The fourth is the name of structures file that defines which structures are used. For example,
 
@@ -318,7 +332,7 @@ However, most of the time when you are using structures, you will want matched d
 ./heartandsubsdataset.py /path/to/struct_tracks/ /path/to/tracks/ 0.5 /path/to/structure_list -n 5000 -v 3 -m /path/to/masks/ -o /path/to/output/dataset/file
 ```
 
-###### 4. Train Random Forest Models
+#### 2. Train Random Forest Models
 
 Now you can train the random forests models using the dataset files produced in the previous stage. As described above, there are several different types of random model file needed for different problem types. Consult tables 5 and 6 above to work out which model files you need for the task you wish to perform and then 3 and 4 for the values of the `-a` and `-p` required to create them.
 
@@ -349,7 +363,7 @@ For the `train_square` executable, most options are the same except that the `-j
 
 Note that the training procedure may take a long time (hours) to run if you choose to use a large number of trees and/or levels, and/or a large number of orientations with `train_square`. It will also use all processors it has available.
 
-###### 5. Create Filter Definition Files
+#### 3. Create Filter Definition Files
 
 The filter definition files are produced by the scripts in the `scripts/filter_fit/` directory, as in **Table 7**. Each requires some basic inputs (such as the directory containing the track files, where to place the output file, and the location of the parameters file to use) and has some more advanced options. You can also pass a list of excluded subject-ids to each (`-e` option) to make sure the test set is omitted. Check the options for each script by passing the `-h` flag to the relevant script.
 
@@ -372,27 +386,154 @@ Some basic examples are as follows:
 
 Note that the '3's relate to the number of viewing planes used in the annotations (excluding the background class).
 
-###### 6. Test the Models
+#### 4. Test the Models
 
 The testing executables (`test_rotinv` and `test_square`) take one video file, a number of random forest and filter models, and uses the models to estimate the value of the variables from each frame of the video. They should run at high frame rates, and can display the results on screen and/or write the frame-by-frame results to a file.
 
 There are a few basic arguments that are required and a large number of other options. Most of these overlap for the the two executables.
 
 The basic options for both executables are as follows:
-* `-v` : The name of the video file to test.
-* `-r` : The radius of the heart in the video frames (in pixels). This is the only user-supplied data about the input video file.
-* `-m` : The base name for the random forest model files. In order to find additional models (such as cardiac phase regression models etc), the extensions will be added according to the values in **Table 2**, so make sure all the necessary models exist for the problem type you are using and are placed in the same directory. All these models must also use exactly the same feature sets, which will always be the case if they were generated using a single run of the training executable, as is recommended.
-* `-k` : The name of the file to use as a mask of the ultrasound fan area (as described above).
-* `-p` : The problem type, as defined in **Table 1**. An integer between 0 and 5 (there is in fact a value of 6 that also attempts to detect the fetal abdomen using a Hough forest, this feature sort of works but was mostly abandoned and hasn't been documented in this readme).
+* `-v` **Video**: The name of the video file to test.
+* `-r` **Radius**: The radius of the heart in the video frames (in pixels). This is the only user-supplied data about the input video file.
+* `-m` **Forest Model** The base name for the random forest model files. In order to find additional models (such as cardiac phase regression models etc), the extensions will be added according to the values in **Table 2**, so make sure all the necessary models exist for the problem type you are using and are placed in the same directory. All these models must also use exactly the same feature sets, which will always be the case if they were generated using a single run of the training executable, as is recommended.
+* `-k` **Mask**: The name of the file to use as a mask of the ultrasound fan area (as described above).
+* `-p` **Problem Type**: The problem type, as defined in **Table 1**. An integer between 0 and 5 (there is in fact a value of 6 in `test_rotinv` that also attempts to detect the fetal abdomen using a Hough forest, this feature sort of works but was mostly abandoned and hasn't been documented in this readme).
 
 Other options of interest include:
+* `-f` **Filtering**: Turn on particle filters. If this option is not set, the variables will be estimated independently in each frame. If set, a particle filter is used, and the filter definition files must also be provided (see `-z` option).
+* `-z` **Filter Definition Files**: A list of all the filter definition files needed for filtering in this problem type. Exactly the right number of files must be provided in the correct order. To work this out, see **Table 8**, and list the names of the 1, 2, or 3 files necessary in the order they appear in that table. E.g. for problem type 5 you would list a classOriFilter definition file, then a phaseFilter definition file, and then a PCAStructuresFilter definition file.
+* `-d` **Display Mode**: This controls what is displayed on screen during testing. There are five options, numbered 0 to 4:
+	* **0 - 'None'**: Nothing is displayed to the screen. This can increase processing speed quite significantly.
+	* **1 - 'Detection'**: A simple screen showing the input frame and the variable estimates is displayed. In this display, the position of the circle shows the heart position, the radial line shows the orientation, the colour of the circle shows the view plane classification (*cyan* four chamber view, *green* left ventricular outflow tract view, *yellow* three vessel view) and the moving arrowhead shows cardiac phase (moving out -> systole, moving in -> diastole).
+	* **2 - All**: Several windows appear showing different information. One shows the detection, as in mode 1. Then there is one additional windows per view class. If particle filtering is being used, these show information about each particle that currently has the relevant view imposed over the input image (where relevant, particle colour indicates cardiac phase, arrowhead direction indicates particle orientation). If particle filtering is not used, the windows show the detection score for each view class from the detection forest model. If structures are being tracked, their is one window per structure instead of per view class.
+	* **3 - 'Ground Truth'**: Shows the detection window as in mode 1, and also shows the ground truth in a separate window, displayed in the same way. The track file(s) must be provided (`-g` and `-i` options) to enable this.
+	* **4 - 'No Background'**: The same as mode 2, except that the particle or detection forest output are shown over a black image instead of being superimposed over the input image.
+* `-o` **Output**: Write the frame by frame results to this output file. This is a basic text file, with each line corresponding to one frame in the video. There are scripts elsewhere in the repository designed to work with them.
+* `-c` **Record**: Record the displayed windows to a `.avi` file with the provided name.
+* `-u` **Pause**: Pause between each frame (waits for any key to be pressed before continuing).
+* `-n` **Trees (Detection)**: Number of trees to use in the detection forest (must be less than or equal to the number of trees in the trained model file).
+* `-l` **Tree Levels (Detection)**: Number of levels to use in the trees to in the detection forest (must be less than or equal to the number of levels in the trained model file).
+* `-N` **Trees (Phase Regression)**: Number of trees to use in the cardiac phase regression forest (must be less than or equal to the number of trees in the trained model file).
+* `-L` **Tree Levels (Phase Regression)**: Number of levels to use in the trees to in the cardiac phase regression forest (must be less than or equal to the number of levels in the trained model file).
+* `-S` **Trees (Structures)**: Number of trees to use in the structures detection forest (must be less than or equal to the number of trees in the trained model file).
+* `-T` **Tree Levels (Structures)**: Number of levels to use in the trees to in the structures detection forest (must be less than or equal to the number of levels in the trained model file).
+* `-Q` **Particles**: Number of particles to use in the particle filter.
+* `-g` **Ground Truth Track File**: A track file (`.tk`) for the video that is used to display the ground truth in display mode 3.
+* `-i` **Ground Truth Track File (Structures)**: A structures track file (`.stk`) for the video that is used to display the ground truth in display mode 3.
+* `-P` **Use Ground Truth Position**: This refers only to testing without filtering. If set, the estimates for the orientation and cardiac phase are calculated at the ground truth position of the heart, rather than the detection position of the heart (which is the default). To use this, the track file to use for the ground truth must be provided with the `-g` option.
 
+Extra options specific to `test_rotinv` include:
+* `-R` **RIF Calculation Method**: Method used for calculating rotation invariant features. Allowed options are "spatial" or "s" for spatial domain convolutions, "frequency" or "f" for frequency domain calculations or "auto" or "a" for automatic choice of method.
+* `-C` **RIF Coupling Method**: Method used for coupling calculations for rotation invariant features. Allowed options are "element-wise" or "e" for element-wise coupling, "vectorised" or "v" for vectorised coupling (entire images at a time) or "auto" or "a" for automatic choice of method.
 
+#### 5. Parse results
 
+The `parse_output.py` script in the `scripts/analysis` directory takes the results file recorded from the testing executables (using the `-o` option) and compare them to the track file to work out the accuracy of the automatic estimates. To get a summary printed to the terminal you can use something like this:
 
-###### 7. Summarise results
+```bash
+$ ./parse_output.py /path/to/results/file /path/to/track/directory 0 0 0.25 -s
+```
 
-###### 8. Make Plots
+The first two arguments here are the results file to be analysed and the directory where the relevant track file is stored (the correct track file will be automatically selected to match the name of the video that the test was performed on). The next two arguments relate to functionality that we are to using here, and are therefore set to zero (this script can also be used to generate new datasets including automatically selected 'hard' negatives). The fifth argument is the distance threshold within which a detection should be considered 'correct', written as a fraction of the annotated radius of the heart (here we are using a quarter). The `-s` flag causes a human readable summary to be printed to screen.
+
+## Cross-Validation Experiment Workflow
+
+There are also a number of scripts in the repository to facilitate large scale experiments to compare several different parameter sets. Because of the limited of availability of data, these have been implemented to perform a leave-one-subject-out cross-validation. This means that for each subject in the dataset, a model is trained using all the training data that does *not* originate from that subject. This model is then tested on that subject. This is performed for all subjects in the dataset, and results are aggregated across all subjects.
+
+The parameters of interest are divided into two sets: *training parameters*, which govern the training of the forest models, and *testing parameters*, which control various aspects of the testing process. You can define multiple sets of training and testing parameters in special files, and use scripts to perform tests on all of them.
+
+Note that performing cross-validation experiments with several parameters can take a very long time! The training and testing stages in this workflow can each take several days to complete on a modern desktop PC and will use most of the available processor during that time (but usually not too much RAM unless you are training huge forests).
+
+#### 1. Create Dataset Files
+
+To train the models in a cross-validation experiment, we first need datasets files for each cross-validation fold, i.e. excluding each of the subjects. This is done exactly as described in the Basic Workflow section above, with the addition of passing the `-c` flag option to automatically generate one dataset file for each fold (each fold excludes a single subject, according to the subject-id part of the video's file name, and the relevant dataset file's name indicates which subject was excluded by appending `_ex<subject-id>`). This works in the same way for each of the relevant scripts.
+
+#### 2. Create Filter Definition Files
+
+This is also done in the same way as in the basic flow, with the addition of passing the `-c` to each of the scripts that generate the filters. This produces a number of filter files that each exclude one subject identified by appending `_ex<subject-id>` to the file name to indicate which subject was excluded.
+
+#### 3. Create Training Experiment Files
+
+A *training experiment file* lists one or more sets of parameters for training forest models using the training executables. You should create these manually with a text editor.
+
+The structure is very straightforward. Each line of the file relates to one set of training parameters. The first word on the line (before the first white space) is an arbitrary name to identify the parameter set. The rest of the line is parameters for the relevant training executable written exactly as they would be passed to the executable.
+
+There are however some options you should **not** specify, because they will be controlled automatically when you run the experiment file (next step). These are the: the name of the video (`-v`), the name of the output file (`-o`) and the name of the dataset file (`-d`).
+
+A basic example of a training experiment file for `train_rotinv` with a few different feature types and J, K, M parameters is shown below:
+
+```
+int33 -f int -j 3 -k 3 -pa -n 32 -l 12
+grad332 -f grad -j 3 -k 3 -m2 -pa -n 32 -l 12
+grad543motion332 -f grad motion -j 5 3 -k 4 3 -m 3 2 -pa -n 32 -l 12
+```
+
+#### 4. Run Training Experiment File
+
+In order to train all the models listed in the training experiment file, you use the `train_experiment_file.py` script in the `scripts/run/` directory. The required arguments for this script are (in order):
+
+- The full path to the training binary on your system (i.e. the full path of either the `train_rotinv` or `train_square` binary).
+- The path to the training experiment file you want to use (from the previous step).
+- The directory containing the video files
+- The directory containing the datasets for the cross-validation
+- The base name of the datasets within the above directory (i.e. without the `_ex<subject-id>` part).
+- The directory where the trained models should be placed.
+
+The command will look something like this:
+
+```bash
+$ ./train_experiment_file /path/to/build/directory/train_rotinv /path/to/training/experiment/file /path/to/video/directory/ /path/to/dataset/directory/ dataset_name /path/to/model/directory/
+```
+
+This will run the training routine for every cross-validation fold and every set of training parameters in the training experiment file. The output models will be placed in the specified directory with models trained with each set of parameters placed within their own subdirectories with the same name as the parameter set. The models for the different folds are again identified by the addition of `_ex<subject-id>` to the model name.
+
+Note that this will take a long time (days) to run in many cases, depending of course of how many subjects you have, how many sets of training parameters you use, and the parameters you use (particularly the number of trees to train). If for whatever reason this gets interrupted, you can resume where you left off using the `-i` option, which will not repeat the training for any model file that already exists in the specified output directory.
+
+#### 5. Create Testing Experiment Files
+
+Multiple sets of testing parameters (parameters for the testing executables) are specified in *testing experiment files* just like the training parameters. These files work in an almost identical way: each line contains one set of parameters, the first part of the line names that parameter set, and the rest are parameters to the testing executables exactly as they would be passed on the command line.
+
+Again, some of the parameters are automatically controlled for you by the script (next step) and therefore should **not** be specified again in the file. This includes the following:
+
+* `-v` : the video file
+* `-m` : the random forest model file stem
+* `-o` : results output file
+* `-r` : detection radius
+* `-d` : display mode
+* `-g` : ground truth track file
+* `-k` : mask file
+* `-z` : filter definition files
+
+A simple example looks like this:
+
+```
+n8l8freq -n 8 -l 8 -N 8 -L 8 -Rf -p 3
+n16l8freq -n 16 -l 8 -N 16 -L 8 -Rf -p 3
+n32l8freq -n 32 -l 8 -N 32 -L 8 -Rf -p 3
+```
+
+#### 6. Run Testing Experiment File
+
+To run a testing experiment file, use the `test_experiment_file.py` script in the `scripts/run/` directory. You you provide both a training experiment file and a testing experiment file, and each set of testing parameters is run on the models trained using each set of training parameters in the training experiment file. This means that if the training and testing experiment files are both quite long, you will be running a very large number of cross-validation experiments -- use with caution!
+
+The required arguments for this script are (in order):
+
+- The full path to the testing binary on your system (i.e. the full path of either the `test_rotinv` or `test_square` binary).
+- The path to the testing experiment file you want to use (from the previous step).
+- The path to the training experiment file you want to use. It is assumed that the models exist for all the training parameter sets in the training experiment file.
+- The directory containing the video files
+- The top-level directory containing the trained models (i.e. the same one specified to the `train_experiment_file`).
+- The directory where the results should be placed.
+- The directory containing the track files.
+- The directory containing the mask image.
+
+It's best to estimate roughly how long this will take first, based on the fact that testing each video is tested in approximately real time and each is tested `num_trials` times for every combination of training and testing experiments.
+
+After this has completed, the results directory will be populated with the results in a hierarchy of sub-directories. At the top of this hierarchy, the results are grouped by their testing parameters, and then at the lower level by their training parameters.
+
+#### 7. Summarise Experiments
+
+#### 8. Make Plots
 
 **How to match sizes for structures**
 

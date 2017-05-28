@@ -4,9 +4,6 @@ This repository contains all the code to run the experiments in my DPhil thesis 
 about each frame in ultrasound videos of the fetal heart, along with the surrounding
 experimental workflow. The rest of this readme assumes some familiarity with the work (please refer to the references below).
 
-This repo is currently under construction from existing code,
-and a full README will be added soon.
-
 There are two parts to this repository:
 
 - The `cpp` folder contains C++ code for the image analysis pipeline.
@@ -46,7 +43,7 @@ For other operating systems, or to have finer control over the installation proc
 
 ## Full Installation Guide
 
-#### C++ Code
+### C++ Code
 
 #### Portability
 
@@ -116,7 +113,7 @@ your platform's tool to complete the build process. E.g. on GNU/Linux with GNU M
 $ make
 ```
 
-#### Scripts
+### Scripts
 
 To run the scripts you will need a Python 2 interpreter (I've been using 2.7 but it may work on earlier versions). You will also need the following very common third-party packages, which are available in all good package management systems:
 

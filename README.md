@@ -1,6 +1,6 @@
 # Fetal Heart Tools
 
-This repository contains all the code to run the experiments in my DPhil thesis "Automated Analysis of Fetal Cardiac Ultrasound Videos". It implements a tool for automatically estimating information
+This repository contains all the code to run the experiments in my DPhil thesis "Automated Analysis of Fetal Cardiac Ultrasound Videos", except a few self-contained parts that are stored in my other repositories (also on Github). It implements a tool for automatically estimating information
 about each frame in ultrasound videos of the fetal heart, along with the surrounding
 experimental workflow. The rest of this readme assumes some familiarity with the work (please refer to the references below).
 
@@ -106,7 +106,7 @@ build process. Perform an out-of-source build and tell CMake to find the source 
 You can either do this within your preferred CMake GUI (and then hit configure and generate) or pass them in on the command line when you invoke CMake, e.g. if you put all the repositories in your home directory `/home/fred`, then you could use
 
 ```bash
-$ cmake -D CANOPY_DIR=/home/fred/canopy -D RIFEATURES_DIR=/home/fred/RIFeatures -D MONOGENIC_DIR=/home/fred/monogenic home/fred/fetal_heart_analysis/cpp/
+$ cmake -D CANOPY_DIR=/home/fred/canopy -D RIFEATURES_DIR=/home/fred/RIFeatures -D MONOGENIC_DIR=/home/fred/monogenic /home/fred/fetal_heart_analysis/cpp/
 ```
 
 Once CMake has generated the relevant set of build files, you will need to use
@@ -363,6 +363,12 @@ For the `train_square` executable, most options are the same except that the `-j
 
 Note that the training procedure may take a long time (hours) to run if you choose to use a large number of trees and/or levels, and/or a large number of orientations with `train_square`. It will also use all processors it has available.
 
+To train forests for structure detection, the same executables should be used and a structure dataset should be passed with the `-d` option instead of a heart dataset. In order to use a structures detection forest model alongside heart detection and cardiac phase regression models, you should make sure that all training parameters relating to features match so that all the forest models are able to share the same feature extraction routines at test time (parameters such as the number of trees and tree depth can be different).
+
+There is one exception to this, which is the `-x` option. This option allows features of different sizes to be used for structure detection and heart detection/analysis. Typically this is used to allow the image patch used to detect the structures to be smaller than that used to detect the heart. The goal of this option is the same in both the `train_square` and `train_rotinv` executables, but the way it works is different in each case. In  the case of rotation invariant features, the `-x` option allows you to choose a maximum value of the `-j` parameter (which indexes radial profiles) to use for the structures detection. This means that only the smaller, innermost radial profiles are included in the feature set for the structure models. In the case of the rectangular features, the `-x` parameter can be used to simply chooses a smaller patch size (in pixels) to use for the structures forest models.
+
+In order to make sure that a structures forest can be matched to heart models and used in the same call to the testing executable, the name of the structures forest model must be the basename of the heart models with `_subs` appended.
+
 #### 3. Create Filter Definition Files
 
 The filter definition files are produced by the scripts in the `scripts/filter_fit/` directory, as in **Table 7**. Each requires some basic inputs (such as the directory containing the track files, where to place the output file, and the location of the parameters file to use) and has some more advanced options. You can also pass a list of excluded subject-ids to each (`-e` option) to make sure the test set is omitted. Check the options for each script by passing the `-h` flag to the relevant script.
@@ -527,15 +533,47 @@ The required arguments for this script are (in order):
 - The directory containing the track files.
 - The directory containing the mask image.
 
+There are a number of optional parameters, including:
+- `-n` **Number of trials**: Since the particle filters introduce stochasticity into the output, each run with the same set of parameters will give different results. You can therefore use this option to repeat each test multiple times, and store each set of results (the trial number is appended to the end of the results file name). Note that is no point repeating trials if you are not using particle filtering, because the output should be exactly the same each time.
+- `-i` **Ignore exisiting**: As in `train_experiment_file.py`, when this is set trials for which results files exists will not be performed again. It therefore allows you to pick up where a previous set of experiments left off.
+- `-z` **Filter Definition Extensions**: This is the base name of the filter definition files to use (i.e. without the `_ex<subject-id>` extension). Note that if you use filter, the results will be placed in a further subdirectory having the base name of the filter.
+- `-v` **Verbose**: Displays each command before execution.
+
 It's best to estimate roughly how long this will take first, based on the fact that testing each video is tested in approximately real time and each is tested `num_trials` times for every combination of training and testing experiments.
 
 After this has completed, the results directory will be populated with the results in a hierarchy of sub-directories. At the top of this hierarchy, the results are grouped by their testing parameters, and then at the lower level by their training parameters.
 
 #### 7. Summarise Experiments
 
+Before performing analysis that compares different parameter set, it is necessary to first summarise the accuracy of each individual experiment (one set of training and testing parameters across all the tests performed in the cross-validation fold). The script `summarise.py` in the `scripts/analysis` directory is used to perform this task. It takes the same training and testing experiment files used by the `train_experiment_file.py` and `test_experiment_file.py` scripts, and summarises each experiment by internally calling the `parse_output.py` script on each results file and storing the results in a file called `summary` alongside the results files.
+
+The positional arguments for this script are:
+- The testing experiment file
+- The training experiment file
+- The top-level results directory (same as the one passed to `test_experiment_file.py`).
+
+Other options include:
+- `-r` **Radius threshold**: The threshold distance between the detection and the ground truth that is considered a corrent detection, written as a proportion of the heart radius (default 0.25).
+- `-m` **Matching Pattern**: If you only wish to use a subset of the result files, you can specify a match pattern (in the format of a python glob) to decide which to include. 
+- `-t` **Track Directory**: The directory containing the track files (you must specify this unless you edit the source file to change the default).
+- `-s` **Structs Track Directory**: Directory containing the structure track files if necessary. 
+
+
 #### 8. Make Plots
 
-**How to match sizes for structures**
+Once you have the summary files, you can use a number of scripts in the `scripts/analysis/` directory to make various plots to demonstrate the effects of different parameters. These scripts all share a similar format, and require you to pass in the names of the training and testing experiment files to use, and the top-level results directory containing the results files and the summary files produced in the last section. The scripts then parse the training and testing files in order to work out what parameter values were used, then read the summary files to get values for various performance metrics, and makes some plots based on the results.
+
+The following scripts are available, you can use their help functions (`-h`) to find what options are available in each case:
+
+- `accuracy_vs_time.py`: Draws three scatter plots with classification/detection error, orientation error and cardiac phase error respecitvely on the *x*-axes, and calculation time per frame on the *y*-axes for each training experiment. This demonstrates the trade off between accuracy and speed when choosing different feature sets.  
+- `confusion.py`: Draws coloured confusion matrices for each training experiment. These show which view classes are mistaken for each other.
+- `feature_set_bars.py`: Draws a bar chart of accuracy values for different training feature sets of rotation invariant features, with grouped bars for the different feature sets (no coupling, coupling and extra coupling) based on the same base features.
+- `forest_test_graphs.py`: Draws three scatter plots with classification/detection error, orientation error and cardiac phase error respecitvely on the *x*-axes, and calculation time per frame on the *y*-axes for a number of different test-time forest configurations (different forest sizes and forest depths).
+- `particles_graphs.py`: Draws three scatter plots with classification/detection error, orientation error and cardiac phase error respecitvely on the *x*-axes, and calculation time per frame on the *y*-axes for a number of different numbers of particles at test time.
+- `time_bars.py`: Plot the time taken per frame for different rotation invariant feature calculation methods at test time.
+- `structure_bar_plot.py`: Plot the localisation accuracy for different cardiac structures.
+- `sensitivity.py`: Plot showing the trade-off between true positive detection rate and false positive rate for experiments without particle filtering, as the detection threshold is changed.
+- `sensitivity_filtered.py`: Plot showing the trade-off between true positive detection rate and false positive rate for experiments with particle filtering, as the parameters governing the behaviour of the 'hidden' state of the particles are changed.
 
 ## References
 

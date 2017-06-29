@@ -219,6 +219,7 @@ def readHeartTrackFile(filename) :
 		headup		-- 	Boolean variable indicating the 'flip' of the video. True
 						indicates that the cross section is being viewed along the direction from
 						the fetal head to the fetal toes. False indicates the other direction.
+		radius		--	Radius of the heart in the image (pixels)
 	'''
 
 	# Open the file to read info on the first couple of lines

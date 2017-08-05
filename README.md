@@ -20,7 +20,7 @@ The following script handles the entire install process including installing all
 sudo apt install build-essential git cmake
 
 # Install third party C++ libraries
-sudo apt install libopencv-dev libboost-dev libeigen3-dev
+sudo apt install libopencv-dev libboost-all-dev libeigen3-dev
 
 # Install python dependencies
 sudo apt install python-numpy python-scipy python-matplotlib python-opencv
@@ -68,7 +68,7 @@ most package managers.
 For example, if you are using Ubuntu or an Ubuntu-based GNU/Linux distribution you can get all the necessary third-party dependencies as follows (tested on Ubuntu 16.04):
 
 ```bash
-$ sudo apt install build-essential libopencv-dev libboost-dev libeigen3-dev
+$ sudo apt install build-essential libopencv-dev libboost-all-dev libeigen3-dev
 
 ```
 

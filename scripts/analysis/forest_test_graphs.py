@@ -132,7 +132,7 @@ for train_model, time_list, accuracy_list, ori_error_list, phase_error_list in z
 					textcoords='offset points', ha='right', va='bottom',fontsize='small')
 
 
-	plt.xlabel("Normalised Orientation Error",fontweight='bold', fontsize='large')
+	plt.xlabel("Orientation Error",fontweight='bold', fontsize='large')
 	plt.ylabel("Average Time per Frame (ms)",fontweight='bold', fontsize='large')
 	plt.tick_params(axis='both', which='major', labelsize=16)
 	plt.legend(loc=args.legend_location)
@@ -165,7 +165,7 @@ for train_model, time_list, accuracy_list, ori_error_list, phase_error_list in z
 				plt.annotate(str(level),xy=(x,y),xytext=(5, 5),
 					textcoords='offset points', ha='right', va='bottom',fontsize='small')
 
-	plt.xlabel("Normalised Cardiac Phase Error",fontweight='bold', fontsize='large')
+	plt.xlabel("Cardiac Phase Error",fontweight='bold', fontsize='large')
 	plt.ylabel("Average Time per Frame (ms)",fontweight='bold', fontsize='large')
 	plt.tick_params(axis='both', which='major', labelsize=16)
 	plt.legend(loc=args.legend_location)

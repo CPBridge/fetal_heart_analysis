@@ -134,7 +134,7 @@ for (y,x,col,lab,mark) in zip(ori_error_list,time_list,colours,varied_model_list
 # Plot again with just a black outline - this will then be 'above' all the colour faces
 for (y,x,col,lab,mark) in zip(ori_error_list,time_list,colours,varied_model_list,rep_markers)  :
 	plt.scatter(y,x,edgecolors='k',facecolors="none",marker=mark,label=None,s=160)
-plt.xlabel("Normalised Orientation Error",fontweight='bold', fontsize='large')
+plt.xlabel("Orientation Error",fontweight='bold', fontsize='large')
 plt.xlim(0.0,x_lim_upper_angle)
 plt.ylabel("Average Time per Frame (ms)",fontweight='bold', fontsize='large')
 plt.ylim(0,y_lim_upper)
@@ -167,7 +167,7 @@ for (y,x,col,lab,mark) in zip(phase_error_list,time_list,colours,varied_model_li
 # Plot again with just a black outline - this will then be 'above' all the colour faces
 for (y,x,col,lab,mark) in zip(phase_error_list,time_list,colours,varied_model_list,rep_markers)  :
 	plt.scatter(y,x,edgecolors='k',facecolors='none',marker=mark,label=None,s=160)
-plt.xlabel("Normalised Cardiac Phase Error",fontweight='bold', fontsize='large')
+plt.xlabel("Cardiac Phase Error",fontweight='bold', fontsize='large')
 plt.xlim(0.0,x_lim_upper_phase)
 plt.ylabel("Average Time per Frame (ms)",fontweight='bold', fontsize='large')
 plt.ylim(0,y_lim_upper)

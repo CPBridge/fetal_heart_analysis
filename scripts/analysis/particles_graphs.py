@@ -64,7 +64,7 @@ if draw_intra_observer :
 
 # Orientation Figure
 ori_fig = plt.figure(figsize=(10,6))
-plt.xlabel("Normalised Orientation Error",fontweight='bold', fontsize='large')
+plt.xlabel("Orientation Error",fontweight='bold', fontsize='large')
 plt.ylabel("Average Time per Frame (ms)",fontweight='bold', fontsize='large')
 plt.tick_params(axis='both', which='major', labelsize=16)
 plt.grid(b=True, which='major', linestyle='--')
@@ -78,7 +78,7 @@ ori_fig.tight_layout()
 
 # Phase figure
 phase_fig = plt.figure(figsize=(10,6))
-plt.xlabel("Normalised Cardiac Phase Error",fontweight='bold', fontsize='large')
+plt.xlabel("Cardiac Phase Error",fontweight='bold', fontsize='large')
 plt.ylabel("Average Time per Frame (ms)",fontweight='bold', fontsize='large')
 plt.tick_params(axis='both', which='major', labelsize=16)
 plt.grid(b=True, which='major', linestyle='--')

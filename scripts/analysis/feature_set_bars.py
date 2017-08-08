@@ -127,9 +127,9 @@ plt.xlabel('Feature Set',fontsize='large',fontweight='bold')
 if args.type == 'class':
 	plt.ylabel('Detection Error, (%)',fontsize='large',fontweight='bold')
 if args.type == 'phase':
-	plt.ylabel('Normalised Phase Error',fontsize='large',fontweight='bold')
+	plt.ylabel('Cardiac Phase Error',fontsize='large',fontweight='bold')
 if args.type == 'ori':
-	plt.ylabel('Normalised Orientation Error',fontsize='large',fontweight='bold')
+	plt.ylabel('Orientation Error',fontsize='large',fontweight='bold')
 plt.axes().yaxis.grid(b=True, which='major', linestyle='--')
 #plt.title('Scores by group and gender')
 plt.xticks(index + 2*bar_width, features_list, rotation=90,fontsize='small')

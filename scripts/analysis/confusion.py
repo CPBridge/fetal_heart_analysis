@@ -11,6 +11,26 @@ import argparse as ap                     # parser for arguments
 import os                                 # linesep
 import CPBUtils as ut                     # for column numbers in the summary file
 
+# Function for calculating Cohen's Kappa statistic from a confusion matrix
+def kappa_statistic(m):
+	
+	# Dimension
+	d = m.shape[0]
+	
+	# Find the sums of the rows, columns and full matrix
+	row_sums = m.sum(axis=1)
+	col_sums = m.sum(axis=0)
+	full_sum = m.sum()
+	
+	# Agreement is the sum along the diagonal (i.e. trace)
+	po = m.trace()
+	
+	# Expected agreement
+	pe = float(sum((row_sums[i]*col_sums[i] for i in range(d))))/full_sum
+	
+	return float(po - pe)/(full_sum - pe)
+    
+
 class_names = ["4C", "LVOT", "3V"]
 
 parser = ap.ArgumentParser(description='Plot confusion matrices for the classification results')
@@ -33,6 +53,7 @@ else:
 		model_list = [line.split()[0] for line in experiment_file]
 
 matrix_list = []
+kappa_list = []
 
 # Print an explanation message
 if args.output:
@@ -79,6 +100,13 @@ for modelname in model_list :
 
 	# Add this confusion matrix to the list
 	matrix_list.append(confusion_matrix)
+	
+	# Perform an alternative normalisation for finding the kappa statistic
+	# Normalise each matrix and sum so that each video has an equal contribution
+	to_normalise = (confmat_stack[1:,1:,:] if args.neg_row else confmat_stack[:,1:,:])
+	full_normalised_matrix = np.nansum((to_normalise/(to_normalise.sum(axis=1).sum(axis=0))), axis=2)
+	kappa = kappa_statistic(full_normalised_matrix)
+	kappa_list.append(kappa)
 
 	if args.output :
 		print modelname
@@ -86,12 +114,12 @@ for modelname in model_list :
 			print ", ".join("%.3f" % d for d in row )
 		print os.linesep
 
-for (label,cmat) in zip(model_list,matrix_list) :
+for (label,cmat,kappa) in zip(model_list,matrix_list,kappa_list) :
 	fig = plt.figure()
 	plt.imshow(cmat,interpolation='nearest', cmap=cm.Blues, vmin=0.0,vmax=1.0)
 	#plt.title(label,fontweight='bold',fontsize=30)
 	if not args.output :
-		print label
+		print label + ", kappa = " , kappa
 	cbar = plt.colorbar()
 	cbar.ax.tick_params(labelsize=14)
 

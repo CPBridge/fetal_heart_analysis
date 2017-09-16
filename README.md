@@ -551,9 +551,9 @@ The positional arguments for this script are:
 
 Other options include:
 - `-r` **Radius threshold**: The threshold distance between the detection and the ground truth that is considered a corrent detection, written as a proportion of the heart radius (default 0.25).
-- `-m` **Matching Pattern**: If you only wish to use a subset of the result files, you can specify a match pattern (in the format of a python glob) to decide which to include. 
+- `-m` **Matching Pattern**: If you only wish to use a subset of the result files, you can specify a match pattern (in the format of a python glob) to decide which to include.
 - `-t` **Track Directory**: The directory containing the track files (you must specify this unless you edit the source file to change the default).
-- `-s` **Structs Track Directory**: Directory containing the structure track files if necessary. 
+- `-s` **Structs Track Directory**: Directory containing the structure track files if necessary.
 
 
 #### 8. Make Plots
@@ -574,6 +574,10 @@ The following scripts are available, you can use their help functions (`-h`) to 
 
 ## References
 
-This code relates to the following publications:
+The code in this repository implements the experiments conducted in my DPhil (PhD) thesis:
+- C.P. Bridge, “Computer-Aided Analysis of Fetal Cardiac Ultrasound Videos”, DPhil Thesis, University of Oxford, 2017. Available on [my website](http://chrispbridge.wordpress.com/publications).
+
+The following publications also make use of this code:
 
 - C.P. Bridge, C. Ioannou, and J.A. Noble, “Automated Annotation and Quantitative Description of Ultrasound Videos of the Fetal Heart”, *Medical Image Analysis 36* (February 2017) pp. 147-161. Open access available [here](http://dx.doi.org/10.1016/j.media.2016.11.006).
+- C.P. Bridge, Christos Ioannou, and J.A. Noble, “Localizing Cardiac Structures in Fetal Heart Ultrasound Video”, *Machine Learning in Medical Imaging Workshop, MICCAI, 2017*, pp. 246-255. Original article available [here](https://link.springer.com/chapter/10.1007/978-3-319-67389-9_29). Authors' manuscript available on [my website](http://chrispbridge.wordpress.com/publications).

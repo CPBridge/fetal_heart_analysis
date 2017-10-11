@@ -113,6 +113,16 @@ your platform's tool to complete the build process. E.g. on GNU/Linux with GNU M
 $ make
 ```
 
+#### Optimising for Best Performance
+
+In order to achieve high frame rate video processing, as used in my thesis and publications, you will need to perform some basic tuning of the compilation process. The best settings to use will vary between different platforms. In general, you will want to ensure that you are compiling in **release** mode (in CMake set the `CMAKE_BUILD_TYPE` variable to `Release`) and turn on all compiler optimisations.
+
+Wherever I have reported experimental results, I used the following set of compiler flags with GCC on Linux:
+
+`CMAKE_CXX_FLAGS_RELEASE` = `-O3 -DNDEBUG -march=native -DEIGEN_NO_DEBUG -Ofast`
+
+These settings ignore all debug operations (`-DNDEBUG`, and specifically for the Eigen library `-DEIGEN_NO_DEBUG`), make use of any special instructions your processor has available (`-march=native`), and trade off accuracy in favour of speed in mathematical operations (`-Ofast`).
+
 ### Scripts
 
 To run the scripts you will need a Python 2 interpreter (I've been using 2.7 but it may work on earlier versions). You will also need the following very common third-party packages, which are available in all good package management systems:
@@ -438,6 +448,33 @@ $ ./parse_output.py /path/to/results/file /path/to/track/directory 0 0 0.25 -s
 ```
 
 The first two arguments here are the results file to be analysed and the directory where the relevant track file is stored (the correct track file will be automatically selected to match the name of the video that the test was performed on). The next two arguments relate to functionality that we are to using here, and are therefore set to zero (this script can also be used to generate new datasets including automatically selected 'hard' negatives). The fifth argument is the distance threshold within which a detection should be considered 'correct', written as a fraction of the annotated radius of the heart (here we are using a quarter). The `-s` flag causes a human readable summary to be printed to screen.
+
+## Using Pre-trained Models
+
+Some pre-trained models, trained using the videos in the dataset used for my thesis, can be found in a [separate repository](https://github.com/CPBridge/fetal_heart_models). You can use these models to run the algorithm on your own fetal heart ultrasound videos, but bear in mind that the models may not generalise well to different datasets (due to differences in probe parameters, scanning protocols etc).
+
+Suppose you had an example video called `video.avi`, in which the fetal heart appeared with radius 100 pixels, a corresponding mask image `video_mask.png` is available, and the fetal heart models repository has been cloned into your home directory `~`. The following examples will demonstrate how to perform some basic tests on your video with different models:
+
+- Use a model based on rotation invariant features with particle filtering to estimate global heart variables (this is is a good set of parameters to use to get fast, reasonably accurate results):
+```bash
+$ ./test_rotinv -v /path/to/video.avi -r 100 -k /path/to/video_mask.png -p 3 -m ~/fetal_heart_models/forest_models/rotinv/rotinv_j4k3m2 -Rf -Ce -n32 -l12 -N16 -L8 -f -z ~/fetal_heart_models/filter_models/class_ori_filter ~/fetal_heart_models/filter_models/phase_filter
+```
+- Use a model with rectangular features to perform the same task:
+```bash
+$ ./test_square -v /path/to/video.avi -r 100 -k /path/to/video_mask.png -p 3 -m ~/fetal_heart_models/forest_models/rec/rec -n32 -l12 -N16 -L8 -f -z ~/fetal_heart_models/filter_models/class_ori_filter ~/fetal_heart_models/filter_models/phase_filter
+```
+
+- Use a model based on rotation invariant features with particle filtering to estimate global variables and additionally structure locations using a PCA-based model:
+```bash
+$ ./test_rotinv -v /path/to/video.avi -r 100 -k /path/to/video_mask.png -p 5 -m ~/fetal_heart_models/forest_models/rotinv/rotinv_j4k3m2 -Rf -Ce -n32 -l12 -N16 -L8 -S16 -T10 -f -z ~/fetal_heart_models/filter_models/class_ori_filter ~/fetal_heart_models/filter_models/phase_filter ~/fetal_heart_models/filter_models/pca_structs_filter
+```
+
+- Use a model with rectangular features to estimate global variables and additionally structure locations using a partitioned model:
+```bash
+./test_square -v /path/to/video.avi -r 100 -k /path/to/video_mask.png -p 4 -m ~/fetal_heart_models/forest_models/rec/rec -n32 -l12 -N16 -L8 -S16 -T10 -f -z ~/fetal_heart_models/filter_models/class_ori_filter ~/fetal_heart_models/filter_models/phase_filter ~/fetal_heart_models/filter/models/partitioned_structs_filter
+```
+
+For a more detailed summary of the options for the test executables, see the previous section.
 
 ## Cross-Validation Experiment Workflow
 

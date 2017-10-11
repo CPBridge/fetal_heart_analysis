@@ -280,7 +280,7 @@ When running test using particle filters, the following filter files are require
 
 ## Preparing Training Data
 
-In order to use the tools in this repository, you will need a suitable set of fetal heart ultrasound videos. This section takes you through preparing this data for use with the software.
+In order to use the tools in this repository, you will need a suitable set of fetal heart ultrasound videos. This section takes you through preparing this data for use with the software. Alternatively you can download and use pre-trained models for demonstration purposes (see the next section).
 
 #### 1. Obtain Video Data
 

@@ -403,7 +403,7 @@ int main( int argc, char** argv )
 		cerr  << "Could not open reference " << videofile << endl;
 		return EXIT_FAILURE;
 	}
-	frame_rate = vid_obj.get(CV_CAP_PROP_FPS);
+	frame_rate = vid_obj.get(cv::CAP_PROP_FPS);
 
 	// Get the frame rate
 	if(isnan(frame_rate))
@@ -416,9 +416,9 @@ int main( int argc, char** argv )
 		}
 	}
 
-	const int xsize = vid_obj.get(CV_CAP_PROP_FRAME_WIDTH);
-	const int ysize = vid_obj.get(CV_CAP_PROP_FRAME_HEIGHT);
-	int n_frames = vid_obj.get(CV_CAP_PROP_FRAME_COUNT);
+	const int xsize = vid_obj.get(cv::CAP_PROP_FRAME_WIDTH);
+	const int ysize = vid_obj.get(cv::CAP_PROP_FRAME_HEIGHT);
+	int n_frames = vid_obj.get(cv::CAP_PROP_FRAME_COUNT);
 	const float scale_factor = float(winhalfsize)/radius;
 	radius *= scale_factor;
 	const int radius_int = std::ceil(radius);
@@ -873,7 +873,7 @@ int main( int argc, char** argv )
 			n_frames = f;
 			break;
 		}
-		cvtColor(disp,I,CV_BGR2GRAY);
+		cvtColor(disp,I,cv::COLOR_BGR2GRAY);
 
 		if(scale_factor != 1.0)
 			resize(I,I_resize,Size(xresize,yresize));

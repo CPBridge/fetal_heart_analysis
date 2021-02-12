@@ -71,7 +71,7 @@ void displayComplex(Mat& image, Mat& out)
 	merge(channels,3,out);
 
 	// Convert to RGB
-	cvtColor(out,out,CV_HSV2BGR);
+	cvtColor(out,out,cv::COLOR_HSV2BGR);
 
 }
 
@@ -82,7 +82,7 @@ void superimposeVector(const cv::Mat& image, const cv::Mat_<Vec2f>& vectorIm, cv
 
 	out = image.clone();
 	if(out.channels() != 3)
-		cvtColor(out,out,CV_GRAY2BGR);
+		cvtColor(out,out,cv::COLOR_GRAY2BGR);
 
 	for(int y = stride; y < image.rows; y += stride)
 	{

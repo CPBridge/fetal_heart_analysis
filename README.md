@@ -57,7 +57,7 @@ run the code in this project. They are all common and available on most platform
 
 * A C++ compiler supporting the C++14 standard (requires a relatively modern version of your compiler).
 * A C++ compiler supporting the [OpenMP](http://openmp.org/wp/) standard (includes most major compilers on major platforms including MSVC, g++ and clang).
-* The [OpenCV](http://opencv.org) library for computer vision. Tested on version 3.1.0 but most fairly recent
+* The [OpenCV](http://opencv.org) library for computer vision. Tested on version 4.2 but most fairly recent
 versions should be compatible. If you are using GNU/Linux, there will probably
 be a suitable packaged version in your distribution's repository.
 * The [boost](http://www.boost.org) [special functions](http://www.boost.org/doc/libs/1_62_0/libs/math/doc/html/special.html), [program options](http://www.boost.org/doc/libs/1_64_0/doc/html/program_options.html), [filesystem](http://www.boost.org/doc/libs/1_62_0/libs/filesystem/doc/index.htm)

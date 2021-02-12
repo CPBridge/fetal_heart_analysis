@@ -408,7 +408,7 @@ int main( int argc, char** argv )
 		cerr  << "ERROR: Could not open video file " << videofile << endl;
 		return EXIT_FAILURE;
 	}
-	frame_rate = vid_obj.get(CV_CAP_PROP_FPS);
+	frame_rate = vid_obj.get(cv::CAP_PROP_FPS);
 
 	if(isnan(frame_rate))
 	{
@@ -420,9 +420,9 @@ int main( int argc, char** argv )
 		}
 	}
 
-	const int xsize = vid_obj.get(CV_CAP_PROP_FRAME_WIDTH);
-	const int ysize = vid_obj.get(CV_CAP_PROP_FRAME_HEIGHT);
-	int n_frames = vid_obj.get(CV_CAP_PROP_FRAME_COUNT);
+	const int xsize = vid_obj.get(cv::CAP_PROP_FRAME_WIDTH);
+	const int ysize = vid_obj.get(cv::CAP_PROP_FRAME_HEIGHT);
+	int n_frames = vid_obj.get(cv::CAP_PROP_FRAME_COUNT);
 	const int xresize = std::round(xsize*scale_factor);
 	const int yresize = std::round(ysize*scale_factor);
 	const int hough_size_x = std::round(xresize*(1.0+2.0*pad_fraction));
@@ -952,7 +952,7 @@ int main( int argc, char** argv )
 				break;
 		}
 
-		int ex = static_cast<int>(vid_obj.get(CV_CAP_PROP_FOURCC));
+		int ex = static_cast<int>(vid_obj.get(cv::CAP_PROP_FOURCC));
 		output_video.open(record_vidname.string(), ex, frame_rate, record_vid_size, true);
 
 		if (!output_video.isOpened())
@@ -1055,7 +1055,7 @@ int main( int argc, char** argv )
 			n_frames = f;
 			break;
 		}
-		cvtColor(disp,I,CV_BGR2GRAY);
+		cvtColor(disp,I,cv::COLOR_BGR2GRAY);
 
 		if(scale_factor != 1.0)
 			resize(I,I_resize,Size(xresize,yresize));
@@ -1134,7 +1134,7 @@ int main( int argc, char** argv )
 				abdomen_max_point_x = (max_x_resize - hough_offset_x)/scale_factor;
 				abdomen_max_point_y = (max_y_resize - hough_offset_y)/scale_factor;
 				if(display_mode == C_DISPLAY_MODE_ALL || display_mode == C_DISPLAY_MODE_NO_IMPOSE)
-					normalize(hough_image,hough_disp,0,1, CV_MINMAX);
+					normalize(hough_image,hough_disp,0,1, cv::NORM_MINMAX);
 			}
 			else
 			{

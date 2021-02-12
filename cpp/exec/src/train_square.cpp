@@ -295,9 +295,9 @@ int main( int argc, char** argv )
 				read_error = true;
 				continue;
 			}
-			const int xsize = vid_obj.get(CV_CAP_PROP_FRAME_WIDTH);
-			const int ysize = vid_obj.get(CV_CAP_PROP_FRAME_HEIGHT);
-			float frame_rate = vid_obj.get(CV_CAP_PROP_FPS);
+			const int xsize = vid_obj.get(cv::CAP_PROP_FRAME_WIDTH);
+			const int ysize = vid_obj.get(cv::CAP_PROP_FRAME_HEIGHT);
+			float frame_rate = vid_obj.get(cv::CAP_PROP_FPS);
 
 			if(isnan(frame_rate))
 			{
@@ -355,7 +355,7 @@ int main( int argc, char** argv )
 								vid_obj.grab();
 							vid_obj >> prev_image_in; if(f != frameno[d] - 1) cout << "Warning: wrong frame number " << f << " " << frameno[d]-1 << endl;
 							++f;
-							cvtColor(prev_image_in,prev_image_in,CV_BGR2GRAY);
+							cvtColor(prev_image_in,prev_image_in,cv::COLOR_BGR2GRAY);
 							resize(prev_image_in,prev_image_in,Size(xresize,yresize));
 							prev_image_in.convertTo(I_prev,CV_8U);
 						}
@@ -368,7 +368,7 @@ int main( int argc, char** argv )
 					vid_obj >> image_in; if(f != frameno[d]) cout << "Warning: wrong frame number " << f << " " << frameno[d] << endl;
 					++f;
 					resize(image_in,image_in,Size(xresize,yresize));
-					cvtColor(image_in,image_in,CV_BGR2GRAY);
+					cvtColor(image_in,image_in,cv::COLOR_BGR2GRAY);
 					image_in.convertTo(I,CV_8U);
 
 				} // end else (check for same frame)

@@ -1028,7 +1028,7 @@ bool prepareMask(const std::string& filename, const cv::Size expected_size, cv::
 	using namespace cv;
 
 	// Read mask from file
-	Mat raw_mask = imread(filename,CV_LOAD_IMAGE_GRAYSCALE);
+	Mat raw_mask = imread(filename,cv::IMREAD_GRAYSCALE);
 
 	if(raw_mask.empty())
 	{
@@ -1046,7 +1046,7 @@ bool prepareMask(const std::string& filename, const cv::Size expected_size, cv::
 	if(shrink_distance > 0.0)
 	{
 		Mat distances;
-		distanceTransform(raw_mask,distances,CV_DIST_L2,5);
+		distanceTransform(raw_mask,distances,cv::DIST_L2,5);
 
 		// Threshold this
 		threshold(distances,shrunk_mask,shrink_distance,1,THRESH_BINARY);
